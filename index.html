@@ -1125,14 +1125,14 @@ function tablaCierre(x) {
 
 V.pedidos = async () => {
   if (!listo('centro')) return `<div class="top"><h1>Pedidos y tracking</h1></div>${vacio('centro')}`;
-  const [ped, prov, env, fac] = await Promise.all([D.tabla('pedidos', '*'), D.tabla('proveedores', '*'), D.tabla('envios', '*'), D.tabla('facturas', '*')]);
+  const [ped, prov, env, fac, its] = await Promise.all([D.tabla('pedidos', '*'), D.tabla('proveedores', '*'), D.tabla('envios', '*'), D.tabla('facturas', '*'), D.tabla('pedido_items', '*')]);
   const pn = Object.fromEntries(prov.map((p) => [p.id, p.nombre]));
   const lista = ped.filter(deEmpresa).sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
   const abiertos = lista.filter((p) => !['recibido', 'cerrado'].includes(p.estado));
   const ESTADOS = ['borrador', 'pedido', 'pagado', 'en_transito', 'en_aduana', 'recibido', 'cerrado'];
   return `
-  <div class="top"><div><h1>Pedidos, facturas y tracking</h1><p class="sub">Compras a proveedores de Uniformes y Racks, con su factura y su número de guía.</p></div>${htmlFiltros({ periodo: false })}</div>
-  <div class="kpis">${kpi('Pedidos abiertos', abiertos.length)}${kpi('En tránsito o aduana', abiertos.filter((p) => /transito|aduana/.test(p.estado)).length)}${kpi('Comprometido', usd(abiertos.reduce((s, p) => s + Number(p.total || 0) + Number(p.flete_usd || 0) + Number(p.nacionalizacion_usd || 0), 0)), 'mercancía + flete + nacionalización')}</div>
+  <div class="top"><div><h1>Pedidos, facturas y tracking</h1><p class="sub">Compras a proveedores de Uniformes y Racks. Todo se carga aquí a mano: el pedido, lo que trae, la factura, la guía y lo que va llegando. No depende de Shopify.</p></div>${htmlFiltros({ periodo: false })}</div>
+  <div class="kpis">${kpi('Pedidos abiertos', abiertos.length)}${kpi('En tránsito o aduana', abiertos.filter((p) => /transito|aduana/.test(p.estado)).length)}${kpi('Comprometido', usd(abiertos.reduce((s, p) => s + costosPedido(p, its.filter((i) => i.pedido_id === p.id)).total, 0)), 'mercancía + flete + nacionalización')}${kpi('Unidades por llegar', abiertos.reduce((s, p) => { const c = costosPedido(p, its.filter((i) => i.pedido_id === p.id)); return s + c.unidades - c.recibidas; }, 0))}</div>
   <section class="panel" style="margin-top:16px"><h2>Nuevo pedido</h2>
     <form class="form" id="f-pedido">
       <label>Empresa<select id="p-emp"><option value="uniformes">Uniformes Caracas</option><option value="racks">Racks</option></select></label>
@@ -1140,7 +1140,7 @@ V.pedidos = async () => {
       <datalist id="l-prov">${prov.map((p) => `<option value="${esc(p.nombre)}">`).join('')}</datalist>
       <label>N.º de pedido<input type="text" id="p-cod"></label>
       <label>Fecha<input type="date" id="p-fecha" value="${hoy()}"></label>
-      <label>Total USD<input type="number" id="p-total" step="0.01" min="0"></label>
+      <label>Total USD<input type="number" id="p-total" step="0.01" min="0" placeholder="Si no cargas artículos"></label>
       <label>Flete USD<input type="number" id="p-flete" step="0.01" min="0"></label>
       <label class="wide">Notas<input type="text" id="p-notas"></label>
       <button class="btn" type="submit">Crear pedido</button>
@@ -1149,7 +1149,7 @@ V.pedidos = async () => {
   <section class="panel" style="margin-top:16px"><h2>Pedidos</h2>
   ${lista.length ? lista.map((p) => {
     const ev = env.filter((e) => e.pedido_id === p.id), fv = fac.filter((f) => f.pedido_id === p.id);
-    return `<details class="panel" style="padding:12px"${abiertos.includes(p) ? ' open' : ''}><summary><strong>${esc(pn[p.proveedor_id] || 'Proveedor')}</strong> ${p.codigo ? `<span class="mono">${esc(p.codigo)}</span>` : ''} · ${fCorta(String(p.fecha))} · ${usd(p.total)} ${empPill(p.empresa)} ${pillPedido(p.estado)}</summary>
+    return `<details class="panel" style="padding:12px"${abiertos.includes(p) ? ' open' : ''}><summary><strong>${esc(pn[p.proveedor_id] || 'Proveedor')}</strong> ${p.codigo ? `<span class="mono">${esc(p.codigo)}</span>` : ''} · ${fCorta(String(p.fecha))} · ${usd(costosPedido(p, its.filter((i) => i.pedido_id === p.id)).total)} ${empPill(p.empresa)} ${pillPedido(p.estado)}</summary>
       <div class="grid cols-3" style="margin-top:10px">
         <div class="grid" style="gap:6px"><h3>Estado</h3><select data-estado="${p.id}" aria-label="Estado del pedido">${ESTADOS.map((s) => `<option value="${s}"${s === p.estado ? ' selected' : ''}>${s.replace('_', ' ')}</option>`).join('')}</select>${p.notas ? `<p class="small muted">${esc(p.notas)}</p>` : ''}</div>
         <div class="grid" style="gap:6px"><h3>Tracking</h3>
@@ -1160,10 +1160,43 @@ V.pedidos = async () => {
           ${fv.map((f) => `<div class="small">${esc(f.numero || 'Factura')} · ${f.monto ? usd(f.monto) : ''} ${f.archivo_url ? `<button class="btn ghost small" type="button" data-ver="${esc(f.archivo_url)}">Ver archivo</button>` : ''}</div>`).join('') || '<span class="small muted">Sin factura.</span>'}
           <form class="form" data-factura="${p.id}" style="grid-template-columns:1fr 1fr"><input type="text" placeholder="N.º factura" aria-label="Número de factura"><input type="number" step="0.01" placeholder="Monto USD" aria-label="Monto"><input type="file" accept="image/*,application/pdf" class="wide" aria-label="Archivo de la factura"><button class="btn small wide" type="submit">Subir factura</button></form>
         </div>
-      </div></details>`;
-  }).join('') : '<p class="muted">Todavía no hay pedidos.</p>'}
+      </div>
+      ${bloqueItems(p, its.filter((i) => i.pedido_id === p.id))}
+      </details>`;
+  }).join('') : '<div class="empty"><strong>Todavía no hay pedidos.</strong><span>Crea el primero con el formulario de arriba y luego añade lo que trae: modelo, cantidad y costo.</span></div>'}
   </section>`;
 };
+function costosPedido(p, items) {
+  const mercancia = items.length ? items.reduce((s, i) => s + Number(i.cantidad || 0) * Number(i.costo_unit || 0), 0) : Number(p.total || 0);
+  const unidades = items.reduce((s, i) => s + Number(i.cantidad || 0), 0);
+  const recibidas = items.reduce((s, i) => s + Math.min(Number(i.recibido || 0), Number(i.cantidad || 0)), 0);
+  const extra = Number(p.flete_usd || 0) + Number(p.nacionalizacion_usd || 0);
+  return { mercancia: r2(mercancia), unidades, recibidas, extra: r2(extra), total: r2(mercancia + extra), factor: mercancia > 0 ? (mercancia + extra) / mercancia : 1 };
+}
+function bloqueItems(p, items) {
+  const c = costosPedido(p, items);
+  return `<div class="grid" style="gap:8px;margin-top:14px">
+    <div class="panel-h"><h3>Lo que trae el pedido</h3>
+      <span class="small muted">${c.unidades} uds · recibidas ${c.recibidas} · mercancía ${usd(c.mercancia)} + flete y nacionalización ${usd(c.extra)} = <strong>${usd(c.total)}</strong></span></div>
+    ${items.length ? `<div class="tbl-wrap"><table><thead><tr><th>SKU / modelo</th><th>Descripción</th><th class="num">Cant.</th><th class="num">Costo unit.</th><th class="num">Subtotal</th><th class="num">Costo puesto</th><th class="num">Recibido</th><th></th></tr></thead><tbody>
+      ${items.map((i) => `<tr><td class="mono">${esc(i.sku || '—')}</td><td>${esc(i.descripcion || '')}</td><td class="num">${i.cantidad}</td><td class="num">${usd(i.costo_unit)}</td><td class="num">${usd(Number(i.cantidad) * Number(i.costo_unit))}</td><td class="num" title="Costo unitario con flete y nacionalización repartidos">${usd(Number(i.costo_unit) * c.factor)}</td>
+      <td class="num"><input type="number" min="0" max="${i.cantidad}" value="${i.recibido || 0}" data-recibido="${i.id}" style="width:72px" aria-label="Unidades recibidas de ${esc(i.sku || i.descripcion || '')}"></td>
+      <td><button class="btn ghost small" type="button" data-borra-item="${i.id}">Quitar</button></td></tr>`).join('')}
+    </tbody></table></div>` : '<p class="small muted">Sin artículos todavía. El costo puesto reparte el flete y la nacionalización en proporción al costo de cada artículo.</p>'}
+    <form class="form" data-item="${p.id}" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,120px),1fr))">
+      <input type="text" placeholder="SKU o modelo" aria-label="SKU o modelo">
+      <input type="text" placeholder="Descripción (color, talla…)" aria-label="Descripción">
+      <input type="number" min="1" step="1" placeholder="Cantidad" required aria-label="Cantidad">
+      <input type="number" min="0" step="0.01" placeholder="Costo unit. USD" required aria-label="Costo unitario">
+      <button class="btn small" type="submit">Añadir artículo</button>
+    </form>
+    <form class="form" data-costos="${p.id}" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))">
+      <label>Flete USD<input type="number" min="0" step="0.01" value="${Number(p.flete_usd || 0)}"></label>
+      <label>Nacionalización USD<input type="number" min="0" step="0.01" value="${Number(p.nacionalizacion_usd || 0)}"></label>
+      <button class="btn ghost small" type="submit">Guardar costos</button>
+    </form>
+  </div>`;
+}
 const pillPedido = (e) => `<span class="pill ${e === 'recibido' || e === 'cerrado' ? 'p-ok' : /transito|aduana/.test(e) ? 'p-warn' : 'p-n'}">${esc(String(e).replace('_', ' '))}</span>`;
 function linkTracking(e) {
   const t = encodeURIComponent(e.tracking);
@@ -1376,6 +1409,14 @@ document.addEventListener('submit', async (ev) => {
       }
       await guardar('facturas', { pedido_id: f.dataset.factura, numero: num.value.trim() || null, monto: Number(monto.value) || null, archivo_url: ruta, fecha: hoy() });
       toast('Factura guardada.');
+    } else if (f.dataset.item) {
+      const [sku, desc, cant, costo] = f.querySelectorAll('input');
+      await guardar('pedido_items', { pedido_id: f.dataset.item, sku: sku.value.trim() || null, descripcion: desc.value.trim() || null, cantidad: Number(cant.value), costo_unit: Number(costo.value), recibido: 0 });
+      toast('Artículo añadido.');
+    } else if (f.dataset.costos) {
+      const [fl, na] = f.querySelectorAll('input');
+      await guardar('pedidos', { id: f.dataset.costos, flete_usd: Number(fl.value) || 0, nacionalizacion_usd: Number(na.value) || 0 });
+      toast('Costos del pedido guardados.');
     } else if (f.id === 'f-costo') {
       await guardar('costos_fijos', { concepto: $('#c-conc').value.trim(), monto: Number($('#c-monto').value), moneda: $('#c-mon').value, frecuencia: $('#c-frec').value, dia_pago: Number($('#c-dia').value) || null, empresa: F.empresa === 'racks' ? 'racks' : 'uniformes' });
       toast('Costo agregado.');
@@ -1394,6 +1435,8 @@ document.addEventListener('submit', async (ev) => {
   } catch (e) { toastErr(e); }
 });
 document.addEventListener('change', async (ev) => {
+  const rc = ev.target.closest('[data-recibido]');
+  if (rc) { try { await guardar('pedido_items', { id: Number(rc.dataset.recibido), recibido: Math.max(0, Number(rc.value) || 0) }); toast('Recibido actualizado.'); render(); } catch (e) { toastErr(e); } return; }
   const s = ev.target.closest('[data-estado]'); if (!s) return;
   try { await guardar('pedidos', { id: s.dataset.estado, estado: s.value }); toast('Estado actualizado.'); render(); } catch (e) { toastErr(e); }
 });
@@ -1402,6 +1445,7 @@ document.addEventListener('click', async (ev) => {
   try {
     if (t.id === 'b-salir') return salir();
     if (t.dataset.borraCosto) { await borrar('costos_fijos', 'id', Number(t.dataset.borraCosto)); toast('Costo quitado.'); return render(); }
+    if (t.dataset.borraItem) { await borrar('pedido_items', 'id', Number(t.dataset.borraItem)); toast('Artículo quitado.'); return render(); }
     if (t.dataset.borraRec) { await borrar('recordatorios', 'id', t.dataset.borraRec); toast('Recordatorio quitado.'); return render(); }
     if (t.dataset.ver) {
       if (DEMO) return toast('Modo demo: no hay archivo.');
