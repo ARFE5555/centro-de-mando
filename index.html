@@ -1,0 +1,1461 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Centro de Mando UC</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#0f5c4f">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: barra lateral de módulos + área de trabajo; en móvil la barra pasa arriba como cinta deslizable */
+:root{
+  --bg:#f2f5f7; --surface:#ffffff; --sunk:#e9eef2; --ink:#14232e; --muted:#5b6b77; --line:#d8e0e6;
+  --ceil:#3f7aa3; --ceil-soft:#e3eef6; --ceil-2:#9cc2de; --racks:#7b5ea7; --racks-soft:#efe9f7;
+  --ok:#2f8a5b; --ok-soft:#e2f2e9; --warn:#a46b12; --warn-soft:#fbf0dc; --bad:#b4413a; --bad-soft:#f9e3e1;
+  --side:#0f2a37; --side-ink:#d6e4ec; --side-muted:#86a2b2; --side-on:#1f4a5e;
+  --f-display:"Familjen Grotesk","Helvetica Neue",Arial,sans-serif;
+  --f-body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f171d; --surface:#16222b; --sunk:#111b22; --ink:#e4ecf1; --muted:#93a4b0; --line:#273641;
+  --ceil:#7fb3d8; --ceil-soft:#1c3243; --ceil-2:#3c6684; --racks:#b59ee0; --racks-soft:#2a2238;
+  --ok:#5cc28d; --ok-soft:#173226; --warn:#e0a447; --warn-soft:#33270f; --bad:#ef8a83; --bad-soft:#3a1d1b;
+  --side:#0a1218; --side-ink:#d6e4ec; --side-muted:#7f97a6; --side-on:#18303d; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f171d; --surface:#16222b; --sunk:#111b22; --ink:#e4ecf1; --muted:#93a4b0; --line:#273641;
+  --ceil:#7fb3d8; --ceil-soft:#1c3243; --ceil-2:#3c6684; --racks:#b59ee0; --racks-soft:#2a2238;
+  --ok:#5cc28d; --ok-soft:#173226; --warn:#e0a447; --warn-soft:#33270f; --bad:#ef8a83; --bad-soft:#3a1d1b;
+  --side:#0a1218; --side-ink:#d6e4ec; --side-muted:#7f97a6; --side-on:#18303d; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body)}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--ceil)}
+.app{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:100vh}
+nav.side{background:var(--side);color:var(--side-ink);padding-block:20px;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:14px;display:flex;flex-direction:column;gap:18px;position:sticky;top:0;height:100vh;overflow-y:auto}
+.brand{font:700 18px/1.1 var(--f-display);display:grid;gap:4px;padding:0 8px}
+.brand small{font:500 11px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--side-muted)}
+.navlist{display:grid;gap:2px}
+.navlist a{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:8px;color:var(--side-ink);text-decoration:none;font-size:14px}
+.navlist a .n{font:500 11px var(--f-mono);color:var(--side-muted);width:18px;font-variant-numeric:tabular-nums}
+.navlist a[aria-current="page"]{background:var(--side-on);color:#fff}
+.navlist a:focus-visible{outline:2px solid var(--ceil-2);outline-offset:1px}
+.sidefoot{margin-top:auto;display:grid;gap:6px;padding:0 8px;font-size:12px;color:var(--side-muted)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--side-muted);margin-right:6px}
+.dot.on{background:#5cc28d}
+main{min-width:0;padding-block:24px 64px;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px))}
+@media (max-width:860px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  nav.side{position:sticky;top:0;z-index:5;height:auto;flex-direction:row;align-items:center;gap:12px;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));overflow-x:auto;overflow-y:hidden;padding-top:calc(10px + env(safe-area-inset-top,0px))}
+  .brand{white-space:nowrap;font-size:16px;padding:0}
+  .brand small,.sidefoot{display:none}
+  .navlist{display:flex;gap:4px}
+  .navlist a{white-space:nowrap}
+  .navlist a .n{display:none}
+  main{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+}
+.top{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end;justify-content:space-between;margin-bottom:20px}
+h1{font:700 clamp(24px,3vw,32px)/1.1 var(--f-display);margin:0;text-wrap:balance}
+.sub{color:var(--muted);margin:4px 0 0;max-width:70ch}
+h2{font:600 17px/1.25 var(--f-display);margin:0}
+h3{font:600 14px/1.3 var(--f-display);margin:0;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.seg{display:inline-flex;background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:2px}
+.seg button{border:0;background:transparent;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:13px}
+.seg button[aria-pressed="true"]{background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.08);font-weight:600}
+input[type=date],input[type=text],input[type=number],input[type=email],input[type=password],input[type=datetime-local],select,textarea{background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:7px 9px;min-width:0}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--ceil);outline-offset:1px}
+.btn{border:1px solid var(--ceil);background:var(--ceil);color:#fff;border-radius:7px;padding:7px 14px;cursor:pointer;font-weight:600}
+.btn.ghost{background:transparent;color:var(--ceil)}
+.btn.small{padding:4px 10px;font-size:13px}
+.btn[disabled]{opacity:.5;cursor:default}
+.grid{display:grid;gap:16px}
+.cols-2{grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr))}
+.cols-3{grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:12px;min-width:0;align-content:start}
+.panel-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));gap:12px}
+.kpi{display:grid;gap:2px;padding:12px 14px;border-radius:10px;background:var(--surface);border:1px solid var(--line)}
+.kpi .l{font:500 11px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.kpi .v{font:600 24px/1.2 var(--f-display);font-variant-numeric:tabular-nums}
+.kpi .s{font-size:13px;color:var(--muted)}
+.emp-u{color:var(--ceil)} .emp-r{color:var(--racks)}
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{font:500 11px var(--f-mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted);text-align:left;padding:8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+.pill{display:inline-block;font:500 11px/1 var(--f-mono);letter-spacing:.03em;padding:4px 7px;border-radius:999px;white-space:nowrap}
+.p-ok{background:var(--ok-soft);color:var(--ok)} .p-warn{background:var(--warn-soft);color:var(--warn)} .p-bad{background:var(--bad-soft);color:var(--bad)} .p-n{background:var(--sunk);color:var(--muted)}
+.p-u{background:var(--ceil-soft);color:var(--ceil)} .p-r{background:var(--racks-soft);color:var(--racks)}
+.muted{color:var(--muted)} .small{font-size:13px}
+.empty{border:1px dashed var(--line);border-radius:10px;padding:18px;color:var(--muted);display:grid;gap:8px;justify-items:start}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:10px;align-items:end}
+.form label{display:grid;gap:4px;font-size:13px;color:var(--muted)}
+.form .wide{grid-column:1/-1}
+.banner{background:var(--warn-soft);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:14px}
+.alerts{display:grid;gap:8px}
+.alert{display:flex;gap:10px;align-items:baseline;padding:10px 12px;border-radius:8px;background:var(--sunk);font-size:14px}
+.alert b{font-family:var(--f-display)}
+.toast{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:8px;font-size:14px;max-width:min(420px,calc(100vw - 32px));z-index:20}
+.chart svg{display:block;width:100%;height:auto}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.bar-h{height:8px;border-radius:4px;background:var(--sunk);overflow:hidden}
+.bar-h i{display:block;height:100%;background:var(--ceil)}
+details summary{cursor:pointer}
+.mono{font-family:var(--f-mono);font-size:13px}
+.right{justify-self:end}
+.login{max-width:440px}
+.conn{display:grid;gap:8px}
+.conn-row{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:8px;flex-wrap:wrap}
+@media (prefers-reduced-motion:no-preference){.panel,.kpi{transition:border-color .15s}}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="side" aria-label="Módulos">
+    <div class="brand">Centro de Mando<small>Uniformes Caracas · Racks</small></div>
+    <div class="navlist" id="nav"></div>
+    <div class="sidefoot" id="sidefoot"></div>
+  </nav>
+  <main id="main" tabindex="-1"></main>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+/* ---------- Cálculos compartidos con el bot (generado por scripts/build-web.mjs) ---------- */
+window.UC = {};
+Object.assign(window.UC, (() => {
+// Calculadora de diferencial cambiario y fórmula de precios.
+// Sin dependencias: se usa desde el bot, el sync y las pruebas.
+//
+// Convenciones:
+//   usdt = Bs por USD a tasa de reposición (Binance P2P)
+//   bcv  = Bs por USD a tasa oficial
+// Cuando un cliente paga en Bs a tasa BCV, la tienda recibe menos dólares
+// reales de los que necesita para reponer. El diferencial cubre esa brecha.
+
+const r2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
+
+function validarTasas(usdt, bcv) {
+  if (!(usdt > 0) || !(bcv > 0)) throw new Error('Las tasas USDT y BCV deben ser mayores que cero');
+}
+
+function usdAVes(usd, tasa) {
+  if (!(tasa > 0)) throw new Error('Tasa inválida');
+  return r2(usd * tasa);
+}
+
+function vesAUsd(ves, tasa) {
+  if (!(tasa > 0)) throw new Error('Tasa inválida');
+  return r2(ves / tasa);
+}
+
+/** Brecha porcentual entre USDT y BCV (ej. 0.30 = 30 %). */
+function brecha(usdt, bcv) {
+  validarTasas(usdt, bcv);
+  return usdt / bcv - 1;
+}
+
+/**
+ * Diferencial a cobrar sobre una venta de `montoUsd` cuando se paga en Bs a BCV.
+ * Devuelve cuánto hay que cobrar en Bs y cuánto representa el diferencial en USD-ref.
+ */
+function calcularDiferencial({ montoUsd, usdt, bcv }) {
+  validarTasas(usdt, bcv);
+  if (!(montoUsd >= 0)) throw new Error('Monto inválido');
+  const bsACobrar = montoUsd * usdt;          // Bs necesarios para reponer los USD
+  const refBcv = bsACobrar / bcv;             // lo que eso "parece" en dólares BCV
+  const diferencialUsd = refBcv - montoUsd;   // lo que se agrega como línea #69
+  return {
+    montoUsd: r2(montoUsd),
+    bsACobrar: r2(bsACobrar),
+    refBcvUsd: r2(refBcv),
+    diferencialUsd: r2(diferencialUsd),
+    brechaPct: r2(brecha(usdt, bcv) * 100),
+    bsSinDiferencial: r2(montoUsd * bcv),     // lo que se perdería cobrando a BCV puro
+    perdidaSinDiferencialUsd: r2(montoUsd - (montoUsd * bcv) / usdt),
+  };
+}
+
+/**
+ * Diferencial efectivamente cobrado en una orden de Shopify:
+ * compara la línea de diferencial con lo que debió cobrarse a las tasas del día.
+ */
+function auditarDiferencialOrden({ mercanciaUsd, diferencialCobradoUsd, usdt, bcv }) {
+  const esperado = calcularDiferencial({ montoUsd: mercanciaUsd, usdt, bcv }).diferencialUsd;
+  const desvio = r2(diferencialCobradoUsd - esperado);
+  return {
+    esperadoUsd: esperado,
+    cobradoUsd: r2(diferencialCobradoUsd),
+    desvioUsd: desvio,
+    pctCobrado: mercanciaUsd > 0 ? r2((diferencialCobradoUsd / mercanciaUsd) * 100) : 0,
+  };
+}
+
+const redondearArriba = (n, multiplo) => Math.ceil(n / multiplo - 1e-9) * multiplo;
+
+/**
+ * Fórmula de precio de la tienda:
+ *   USD × USDT = Bs  →  Bs ÷ BCV = ref BCV  →  ÷(1−IVA)  →  ÷(1−Cashea)  →  redondeo al múltiplo
+ * `redondearEn` decide si el múltiplo se aplica al precio en ref-USD ('ref') o en Bs ('bs').
+ */
+function formulaPrecio({ usd, usdt, bcv, ivaPct = 16, casheaPct = 5, multiplo = 5, redondearEn = 'ref' }) {
+  validarTasas(usdt, bcv);
+  const bs = usd * usdt;
+  const ref = bs / bcv;
+  const conIva = ref / (1 - ivaPct / 100);
+  const conCashea = conIva / (1 - casheaPct / 100);
+  const finalRef = redondearEn === 'ref' ? redondearArriba(conCashea, multiplo) : conCashea;
+  const finalBs = redondearEn === 'bs'
+    ? redondearArriba(conCashea * bcv, multiplo)
+    : r2(finalRef * bcv);
+  return {
+    pasos: { bs: r2(bs), refBcv: r2(ref), conIva: r2(conIva), conCashea: r2(conCashea) },
+    precioRefUsd: redondearEn === 'bs' ? r2(finalBs / bcv) : finalRef,
+    precioBs: finalBs,
+  };
+}
+
+return { usdAVes, vesAUsd, brecha, calcularDiferencial, auditarDiferencialOrden, formulaPrecio };
+})());
+Object.assign(window.UC, (() => {
+// Calculadora de costos fijos y punto de equilibrio. Sin dependencias.
+
+const r2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
+
+const A_MENSUAL = { mensual: 1, quincenal: 2, semanal: 52 / 12, anual: 1 / 12 };
+
+/**
+ * @param {Array<{concepto:string, monto:number, moneda:'USD'|'VES', frecuencia?:string, activo?:boolean}>} costos
+ * @param {{tasa:number, margenBrutoPct:number, diasOperativos?:number, ticketPromedioUsd?:number}} opts
+ *   tasa: Bs por USD para convertir los costos en bolívares (normalmente USDT del día)
+ *   margenBrutoPct: margen bruto de la mercancía (precio − costo) / precio, en %
+ */
+function calcularCostosFijos(costos, { tasa, margenBrutoPct, diasOperativos = 26, ticketPromedioUsd } = {}) {
+  if (!(tasa > 0)) throw new Error('Se necesita la tasa para convertir los costos en Bs');
+  if (!(margenBrutoPct > 0 && margenBrutoPct < 100)) throw new Error('El margen bruto debe estar entre 0 y 100');
+
+  const detalle = costos
+    .filter((c) => c.activo !== false)
+    .map((c) => {
+      const factor = A_MENSUAL[c.frecuencia ?? 'mensual'];
+      if (factor === undefined) throw new Error(`Frecuencia desconocida: ${c.frecuencia}`);
+      const mensualOriginal = c.monto * factor;
+      const mensualUsd = c.moneda === 'VES' ? mensualOriginal / tasa : mensualOriginal;
+      return { concepto: c.concepto, moneda: c.moneda, mensualOriginal: r2(mensualOriginal), mensualUsd: r2(mensualUsd) };
+    })
+    .sort((a, b) => b.mensualUsd - a.mensualUsd);
+
+  const totalUsd = detalle.reduce((s, d) => s + d.mensualUsd, 0);
+  const ventasEquilibrioUsd = totalUsd / (margenBrutoPct / 100);
+
+  return {
+    detalle: detalle.map((d) => ({ ...d, pesoPct: totalUsd ? r2((d.mensualUsd / totalUsd) * 100) : 0 })),
+    totalMensualUsd: r2(totalUsd),
+    totalMensualVes: r2(totalUsd * tasa),
+    costoDiarioUsd: r2(totalUsd / diasOperativos),
+    ventasEquilibrioMesUsd: r2(ventasEquilibrioUsd),
+    ventasEquilibrioDiaUsd: r2(ventasEquilibrioUsd / diasOperativos),
+    ordenesEquilibrioDia: ticketPromedioUsd ? Math.ceil(ventasEquilibrioUsd / diasOperativos / ticketPromedioUsd) : null,
+  };
+}
+
+return { calcularCostosFijos };
+})());
+Object.assign(window.UC, (() => {
+// Comisión GRUPAL y nómina. Sin dependencias.
+//
+// La tienda genera un pozo = % sobre las ventas de mercancía del período
+// (el diferencial cambiario no cuenta). El pozo se reparte entre el equipo:
+//   • "iguales": partes iguales entre quienes participan (ajustable con un peso por persona)
+//   • "dias":    proporcional a los días trabajados (tabla turnos) × peso
+// No hace falta saber qué vendedora hizo cada venta.
+
+const r2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
+
+/**
+ * @param {{ventasUsd:number, pct:number, reparto?:'iguales'|'dias',
+ *          empleados:Array<{cedula:string, nombre?:string, apellido?:string, activo?:boolean,
+ *                           participa_comision?:boolean, peso_comision?:number}>,
+ *          turnos?:Array<{fecha:string, cedula:string}>}} p
+ */
+function comisionGrupal({ ventasUsd, pct, reparto = 'iguales', empleados, turnos = [] }) {
+  const pozo = r2(Math.max(0, Number(ventasUsd) || 0) * (Number(pct) || 0) / 100);
+  const participantes = empleados.filter((e) => e.activo !== false && e.participa_comision !== false);
+
+  const dias = {};
+  for (const t of turnos) {
+    const c = String(t.cedula);
+    dias[c] = dias[c] ?? new Set();
+    dias[c].add(String(t.fecha).slice(0, 10));
+  }
+
+  const usarDias = reparto === 'dias';
+  const puntos = participantes.map((e) => {
+    const peso = Number(e.peso_comision ?? 1);
+    const d = dias[e.cedula]?.size ?? 0;
+    return { e, peso, dias: d, puntos: usarDias ? peso * d : peso };
+  });
+  const total = puntos.reduce((s, p) => s + p.puntos, 0);
+
+  // Reparto en centavos para que la suma cuadre exacto con el pozo.
+  const centavos = Math.round(pozo * 100);
+  const lineas = puntos.map((p) => {
+    const exacto = total > 0 ? (centavos * p.puntos) / total : 0;
+    return { cedula: p.e.cedula, nombre: `${p.e.nombre ?? ''} ${p.e.apellido ?? ''}`.trim(), peso: p.peso, dias: p.dias, base: Math.floor(exacto), resto: exacto - Math.floor(exacto) };
+  });
+  let sobrante = total > 0 ? centavos - lineas.reduce((s, l) => s + l.base, 0) : 0;
+  [...lineas].sort((a, b) => b.resto - a.resto).forEach((l) => { if (sobrante > 0) { l.base += 1; sobrante -= 1; } });
+
+  const repartido = lineas.map(({ base, resto, ...l }) => ({
+    ...l,
+    participacion_pct: total > 0 ? r2((puntos.find((p) => p.e.cedula === l.cedula).puntos / total) * 100) : 0,
+    comision_usd: base / 100,
+  }));
+
+  const avisos = [];
+  if (!(Number(pct) > 0)) avisos.push('El % de comisión grupal está en 0: configúralo con "comision 2" (por ejemplo).');
+  if (usarDias && total === 0 && participantes.length) avisos.push('Reparto por días, pero no hay turnos cargados en el período: nadie recibe comisión.');
+  if (!participantes.length) avisos.push('No hay empleados activos que participen de la comisión.');
+
+  return { ventas_usd: r2(ventasUsd), pct: Number(pct) || 0, reparto, pozo_usd: pozo, lineas: repartido, avisos };
+}
+
+/**
+ * Nómina mixta del período. El salario guardado en `empleados` es POR PAGO.
+ * @param {Array} empleados
+ * @param {Record<string, number>} comisiones  cédula → comisión USD
+ * @param {{tasaPago?:number}} opts  Bs por USD, para expresar totales en Bs
+ */
+function calcularNomina(empleados, comisiones = {}, { tasaPago } = {}) {
+  const lineas = empleados.filter((e) => e.activo !== false).map((e) => {
+    const baseUsd = Number(e.salario_usd ?? 0);
+    const baseVes = Number(e.salario_ves ?? 0);
+    const comisionUsd = r2(Number(comisiones[e.cedula] ?? 0));
+    const baseVesEnUsd = tasaPago > 0 ? baseVes / tasaPago : 0;
+    const totalUsd = r2(baseUsd + comisionUsd + baseVesEnUsd);
+    return {
+      cedula: e.cedula,
+      nombre: `${e.nombre} ${e.apellido}`.trim(),
+      frecuencia: e.frecuencia_pago ?? 'quincenal',
+      base_usd: r2(baseUsd),
+      base_ves: r2(baseVes),
+      comision_usd: comisionUsd,
+      total_usd: totalUsd,
+      total_ves: tasaPago > 0 ? r2(totalUsd * tasaPago) : null,
+      // Pago mixto: lo que está en USD se paga en USD y lo que está en Bs en Bs.
+      pagar_usd: r2(baseUsd + comisionUsd),
+      pagar_ves: r2(baseVes),
+    };
+  });
+  const tot = (k) => r2(lineas.reduce((s, l) => s + (l[k] ?? 0), 0));
+  return { lineas, totales: { pagar_usd: tot('pagar_usd'), pagar_ves: tot('pagar_ves'), comisiones_usd: tot('comision_usd'), total_usd: tot('total_usd') } };
+}
+
+return { comisionGrupal, calcularNomina };
+})());
+Object.assign(window.UC, (() => {
+// "Productos calientes reales": no basta con contar unidades.
+// Un producto es caliente si genera dinero, lo compran MUCHOS clientes distintos
+// (no un solo pedido grande) y viene acelerando. Además se cruza con la existencia
+// para avisar cuándo se va a agotar.
+//
+// Reglas:
+//  - Se excluyen líneas que no son mercancía (ej. #69 DIFERENCIAL CAMBIARIO).
+//  - Se usa la cantidad real (descontando devoluciones) y se ignoran órdenes canceladas.
+//  - Se exige un mínimo de órdenes distintas para entrar al ranking.
+//  - Se marca "precio_bajo" lo que mueve muchas unidades a precio de liquidación,
+//    para que no se confunda volumen barato con demanda sana.
+
+const r2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
+const DIA = 86_400_000;
+
+function mediana(nums) {
+  if (!nums.length) return 0;
+  const s = [...nums].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+
+/**
+ * @param {Array<{orden_id:string, fecha:string|Date, producto_id:string, titulo:string,
+ *                cantidad_real:number, total_usd:number, es_mercancia?:boolean, cancelada?:boolean}>} lineas
+ * @param {Record<string, number>} existenciaPorProducto  producto_id → unidades en stock
+ * @param {{ahora?:Date, ventanaCorta?:number, ventanaLarga?:number, minOrdenes?:number,
+ *          limite?:number, diasAlertaQuiebre?:number, excluirProductos?:string[]}} opts
+ */
+function productosCalientes(lineas, existenciaPorProducto = {}, opts = {}) {
+  const {
+    ahora = new Date(),
+    ventanaCorta = 7,
+    ventanaLarga = 28,
+    minOrdenes = 3,
+    limite = 10,
+    diasAlertaQuiebre = 14,
+    excluirProductos = [],
+  } = opts;
+
+  const excluir = new Set(excluirProductos.map(String));
+  const tAhora = ahora.getTime();
+  const desdeLarga = tAhora - ventanaLarga * DIA;
+  const desdeCorta = tAhora - ventanaCorta * DIA;
+
+  const porProducto = new Map();
+  for (const l of lineas) {
+    if (l.es_mercancia === false || l.cancelada) continue;
+    if (excluir.has(String(l.producto_id))) continue;
+    if (/DIFERENCIAL\s+CAMBIARIO/i.test(l.titulo ?? '')) continue;
+    const t = new Date(l.fecha).getTime();
+    if (Number.isNaN(t) || t < desdeLarga || t > tAhora) continue;
+    const qty = Number(l.cantidad_real ?? 0);
+    if (qty <= 0) continue;
+
+    let p = porProducto.get(l.producto_id);
+    if (!p) {
+      p = { producto_id: l.producto_id, titulo: l.titulo, uLarga: 0, uCorta: 0, usdLarga: 0, usdCorta: 0, ordenes: new Set() };
+      porProducto.set(l.producto_id, p);
+    }
+    const usd = Number(l.total_usd ?? 0);
+    p.uLarga += qty;
+    p.usdLarga += usd;
+    p.ordenes.add(l.orden_id);
+    if (t >= desdeCorta) { p.uCorta += qty; p.usdCorta += usd; }
+  }
+
+  const filas = [...porProducto.values()]
+    .filter((p) => p.ordenes.size >= minOrdenes)
+    .map((p) => {
+      const velLarga = p.uLarga / ventanaLarga;            // unidades/día
+      const velCorta = p.uCorta / ventanaCorta;
+      const tendencia = velLarga > 0 ? velCorta / velLarga : 0; // >1 acelera, <1 se enfría
+      const stock = existenciaPorProducto[p.producto_id];
+      const diasCobertura = stock === undefined ? null : velLarga > 0 ? stock / velLarga : null;
+      return {
+        producto_id: p.producto_id,
+        titulo: p.titulo,
+        unidades: p.uLarga,
+        unidadesSemana: p.uCorta,
+        ventasUsd: r2(p.usdLarga),
+        ordenes: p.ordenes.size,
+        precioPromedioUsd: r2(p.usdLarga / p.uLarga),
+        tendencia: r2(tendencia),
+        existencia: stock ?? null,
+        diasCobertura: diasCobertura === null ? null : Math.round(diasCobertura),
+      };
+    });
+
+  if (!filas.length) return [];
+
+  const maxUsd = Math.max(...filas.map((f) => f.ventasUsd)) || 1;
+  const maxOrd = Math.max(...filas.map((f) => f.ordenes)) || 1;
+  const precioMediano = mediana(filas.map((f) => f.precioPromedioUsd));
+
+  return filas
+    .map((f) => {
+      const puntaje =
+        0.5 * (f.ventasUsd / maxUsd) +
+        0.3 * (f.ordenes / maxOrd) +
+        0.2 * Math.min(f.tendencia, 2) / 2;
+      const alertas = [];
+      if (f.diasCobertura !== null && f.diasCobertura < diasAlertaQuiebre) alertas.push('quiebre_de_stock');
+      if (f.existencia === 0) alertas.push('agotado');
+      if (f.tendencia >= 1.3) alertas.push('acelerando');
+      if (f.tendencia > 0 && f.tendencia <= 0.6) alertas.push('enfriando');
+      if (precioMediano > 0 && f.precioPromedioUsd < 0.4 * precioMediano) alertas.push('precio_bajo');
+      return { ...f, puntaje: r2(puntaje * 100), alertas };
+    })
+    .sort((a, b) => b.puntaje - a.puntaje)
+    .slice(0, limite);
+}
+
+return { productosCalientes };
+})());
+Object.assign(window.UC, (() => {
+// Mapeo de Patrimonio y del cierre de caja hacia el centro de mando. Sin dependencias.
+
+const r2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
+const num = (v) => { const x = parseFloat(v); return Number.isFinite(x) ? x : 0; };
+const norm = (s) => String(s ?? '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+function monedaDe(cur) {
+  const c = norm(cur);
+  if (c === 'ves' || c === 'bs' || c === 'bsd' || c === 'vef') return 'VES';
+  return 'USD'; // usd, usdt, zelle… todo lo que no sea bolívar se trata como dólar
+}
+
+/**
+ * Tasa vigente para una fecha a partir de la lista de tasas (ordenada o no):
+ * la del mismo día o la última anterior.
+ */
+function buscadorDeTasas(tasas, campo = 'usdt') {
+  const lista = tasas.map((t) => ({ fecha: String(t.fecha), v: Number(t[campo]) }))
+    .filter((t) => t.v > 0).sort((a, b) => a.fecha.localeCompare(b.fecha));
+  return (fecha) => {
+    let res = null;
+    for (const t of lista) { if (t.fecha <= fecha) res = t.v; else break; }
+    return res;
+  };
+}
+
+/**
+ * Lee "uniformes=Uniformes Caracas,Uniformes|racks=Racks" → [{empresa, patrones[]}]
+ */
+function parsearEmpresas(texto = '') {
+  return String(texto).split('|').map((bloque) => {
+    const [empresa, lista = ''] = bloque.split('=');
+    return { empresa: norm(empresa), patrones: lista.split(',').map(norm).filter(Boolean) };
+  }).filter((e) => e.empresa && e.patrones.length);
+}
+
+/**
+ * Decide a qué empresa pertenece una transacción de Patrimonio (o null si a ninguna).
+ * 1. Por proyecto: el nombre del proyecto contiene alguno de los patrones de la empresa.
+ * 2. Por cuenta: la cuenta está asignada a una empresa (para transacciones sin proyecto).
+ * Patrimonio mezcla negocios: si no hay configuración, no se importa nada.
+ */
+function clasificadorPatrimonio({ empresas = [], cuentas = [] } = {}) {
+  return (txn, cuenta) => {
+    const proy = norm(txn.project);
+    if (proy) {
+      for (const e of empresas) if (e.patrones.some((p) => proy === p || proy.includes(p))) return e.empresa;
+    }
+    const nom = norm(cuenta?.name);
+    if (nom) {
+      for (const e of cuentas) if (e.patrones.includes(nom)) return e.empresa;
+    }
+    return null;
+  };
+}
+
+/**
+ * Convierte una transacción de Patrimonio (fila {id, data, updated_at}) en movimientos.
+ * Devuelve 0, 1 o 2 movimientos (el segundo es la comisión bancaria, si la hay).
+ * @param {{id:string, data:object}} fila
+ * @param {{cuentaId:(string)=>string|null, tasa:(fecha:string)=>number|null}} deps
+ */
+function mapearTxnPatrimonio(fila, { cuentaId, tasa, empresa = 'uniformes' }) {
+  const t = fila.data ?? {};
+  const tipo = t.kind === 'expense' ? 'gasto' : (t.kind === 'income' || t.kind === 'abono') ? 'ingreso' : null;
+  if (!tipo) return []; // compras/ventas de divisas viven en otra tabla y no son de la tienda
+  const monto = num(t.amount ?? t.usd);
+  if (!(monto > 0)) return [];
+  const fecha = String(t.date ?? '').slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return [];
+  const moneda = monedaDe(t.currency);
+  const tasaDia = moneda === 'VES' ? (num(t.tasa) || num(t.rate) || tasa(fecha)) : null;
+  const base = {
+    fecha, moneda, tasa: tasaDia || null,
+    cuenta_id: cuentaId(t.accountId),
+    referencia: t.ref || null,
+    origen: 'patrimonio',
+    empresa,
+  };
+  const out = [{
+    ...base, tipo, monto: r2(monto), origen_id: fila.id,
+    descripcion: [t.motivo, t.note, t.persona, t.project && `(${t.project})`].filter(Boolean).join(' · ') || null,
+  }];
+  const com = num(t.commission);
+  if (com > 0) {
+    out.push({ ...base, tipo: 'gasto', monto: r2(com), origen_id: `${fila.id}:comision`, referencia: null,
+      descripcion: 'Comisión bancaria' + (t.motivo ? ` · ${t.motivo}` : ''), categoria: 'Comisiones bancarias / Cashea' });
+  }
+  return out;
+}
+
+const METODOS = ['efectivo', 'zelle', 'pagomovil', 'transferencia', 'punto', 'cashea'];
+
+/**
+ * Cierre de caja (fila {fecha, data, estado, ...}) + fila de cashea opcional
+ * → { cierre, egresos[] }
+ */
+function mapearCierre(fila, cashea = null) {
+  const d = fila.data ?? {};
+  const porMetodo = {};
+  const claves = new Set([...METODOS, ...(d.extras ?? [])]);
+  for (const k of claves) {
+    const sis = d.sistema?.[k], con = d.conteo?.[k];
+    if ((sis === undefined || sis === '') && (con === undefined || con === '')) continue;
+    porMetodo[k] = { sistema: num(sis), contado: con === undefined || con === '' ? null : num(con) };
+  }
+  const cierre = {
+    fecha: fila.fecha,
+    estado: fila.estado ?? d.estado ?? null,
+    responsable: d.responsable || null,
+    tasa: num(d.tasa) || null,
+    pedidos: Number.isFinite(+d.pedidos) ? +d.pedidos : null,
+    ventas_usd: r2(fila.ventas_usd ?? d.ventasUsd ?? 0),
+    diferencia_usd: r2(fila.diferencia_usd ?? d.diferenciaUsd ?? 0),
+    cashea_usd: r2(d.casheaUsd ?? 0),
+    egresos_usd: r2(d.egresosUsd ?? 0),
+    por_metodo: porMetodo,
+    cashea_facturado: cashea ? r2(cashea.facturado ?? 0) : null,
+    cashea_financiado: cashea ? r2(cashea.financiado ?? 0) : null,
+    notas: d.notas || null,
+    data: d,
+    importado_en: new Date().toISOString(),
+  };
+  const egresos = (d.egresos ?? [])
+    .map((e, i) => ({ i, concepto: String(e.concepto ?? '').trim(), monto: num(e.monto) }))
+    .filter((e) => e.monto > 0)
+    .map((e) => ({
+      fecha: fila.fecha, tipo: 'gasto', moneda: 'USD', monto: r2(e.monto),
+      descripcion: e.concepto || 'Salida de caja', origen: 'cierre_caja', origen_id: `${fila.fecha}:${e.i}`, empresa: 'uniformes',
+      categoria: 'Salidas de caja', cuenta: 'Caja tienda USD',
+    }));
+  return { cierre, egresos };
+}
+
+return { monedaDe, buscadorDeTasas, parsearEmpresas, clasificadorPatrimonio, mapearTxnPatrimonio, mapearCierre };
+})());
+
+</script>
+<script>
+
+</script>
+<script>
+'use strict';
+const CFG = window.CENTRO_CONFIG || {};
+const DEMO = window.UC_DEMO || null;
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const nf = (d) => new Intl.NumberFormat('es-VE', { minimumFractionDigits: d, maximumFractionDigits: d });
+const usd = (n) => (Number(n) < 0 ? '−$' : '$') + nf(2).format(Math.abs(Number(n) || 0));
+const usd0 = (n) => (Number(n) < 0 ? '−$' : '$') + nf(0).format(Math.abs(Number(n) || 0));
+const bs = (n) => 'Bs ' + nf(2).format(Number(n) || 0);
+const r2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
+const hoy = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Caracas' }).format(new Date());
+const sumaDias = (f, n) => { const d = new Date(f + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+const fCorta = (f) => new Date(f + 'T12:00:00Z').toLocaleDateString('es-VE', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+const fLarga = (f) => new Date(f + 'T12:00:00Z').toLocaleDateString('es-VE', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+const EMP = { uniformes: 'Uniformes Caracas', racks: 'Racks' };
+const empPill = (e) => e ? `<span class="pill ${e === 'racks' ? 'p-r' : 'p-u'}">${e === 'racks' ? 'Racks' : 'Uniformes'}</span>` : '<span class="pill p-n">Compartida</span>';
+
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.hidden = false;
+  clearTimeout(toast._t); toast._t = setTimeout(() => { t.hidden = true; }, 3800);
+}
+
+/* =====================================================================
+   CONEXIONES: tres bases. Cierre de caja y Patrimonio se leen directo;
+   el Centro guarda Shopify, gastos manuales, pedidos, nómina y agenda.
+   ===================================================================== */
+const FUENTES = {
+  cierre: { nombre: 'Cierre de caja', desc: 'Cierres diarios, descuadres, Cashea y salidas de caja.' },
+  patrimonio: { nombre: 'Patrimonio', desc: 'Ingresos y gastos de los proyectos Uniformes y Racks.' },
+  centro: { nombre: 'Centro de mando', desc: 'Ventas de Shopify, productos calientes, gastos registrados aquí, pedidos, nómina y agenda.' },
+};
+const S = { clientes: {}, sesion: {}, rol: 'dueno', yo: null };
+
+function cliente(id) {
+  if (DEMO) return null;
+  const c = CFG[id];
+  if (!c || !c.url || !c.anonKey || !window.supabase) return null;
+  if (!S.clientes[id]) S.clientes[id] = window.supabase.createClient(c.url, c.anonKey, { auth: { storageKey: 'uc-' + id, persistSession: true, autoRefreshToken: true } });
+  return S.clientes[id];
+}
+async function revisarSesiones() {
+  for (const id of Object.keys(FUENTES)) {
+    const c = cliente(id);
+    S.sesion[id] = DEMO ? true : c ? !!(await c.auth.getSession()).data.session : false;
+  }
+  if (S.sesion.centro && !DEMO) {
+    const c = cliente('centro');
+    const { data: u } = await c.auth.getUser();
+    const { data } = await c.from('usuarios_web').select('nombre, rol, cedula').eq('email', u.user.email).maybeSingle();
+    if (data) { S.rol = data.rol; S.yo = data; }
+  }
+}
+async function entrar(email, clave, solo) {
+  const res = {};
+  for (const id of solo ? [solo] : Object.keys(FUENTES)) {
+    const c = cliente(id);
+    if (!c) { res[id] = 'sin configurar'; continue; }
+    const { error } = await c.auth.signInWithPassword({ email, password: clave });
+    res[id] = error ? error.message : 'ok';
+  }
+  await revisarSesiones();
+  return res;
+}
+async function salir() {
+  for (const id of Object.keys(FUENTES)) { const c = cliente(id); if (c) await c.auth.signOut(); }
+  CACHE.clear(); await revisarSesiones(); render();
+}
+
+/* ---------- Lectura con caché por sesión de página ---------- */
+const CACHE = new Map();
+async function memo(clave, fn) {
+  if (!CACHE.has(clave)) CACHE.set(clave, fn().catch((e) => { CACHE.delete(clave); throw e; }));
+  return CACHE.get(clave);
+}
+async function todas(c, tabla, columnas, filtro = (q) => q) {
+  const out = [];
+  for (let i = 0; ; i += 1000) {
+    const { data, error } = await filtro(c.from(tabla).select(columnas)).range(i, i + 999);
+    if (error) throw new Error(`${tabla}: ${error.message}`);
+    out.push(...data);
+    if (data.length < 1000) return out;
+  }
+}
+const listo = (id) => DEMO ? true : !!S.sesion[id];
+
+const D = {
+  // Cierre de caja
+  cierres: () => memo('cierres', async () => {
+    let filas, cashea;
+    if (DEMO) ({ cierresCrudos: filas, cashea } = DEMO);
+    else {
+      const c = cliente('cierre'); if (!listo('cierre')) return null;
+      const desde = sumaDias(hoy(), -400);
+      [filas, cashea] = await Promise.all([
+        todas(c, 'cierres', 'fecha, data, estado, ventas_usd, diferencia_usd', (q) => q.gte('fecha', desde)),
+        todas(c, 'cashea', 'fecha, facturado, financiado, ordenes', (q) => q.gte('fecha', desde)),
+      ]);
+    }
+    const cm = Object.fromEntries(cashea.map((x) => [x.fecha, x]));
+    return filas.map((f) => UC.mapearCierre(f, cm[f.fecha])).map(({ cierre, egresos }) => ({ ...cierre, egresos }))
+      .sort((a, b) => b.fecha.localeCompare(a.fecha));
+  }),
+  // Patrimonio → movimientos de Uniformes y Racks
+  patrimonio: () => memo('patrimonio', async () => {
+    let accounts, txns;
+    if (DEMO) ({ accounts, txns } = DEMO.patrimonio);
+    else {
+      const c = cliente('patrimonio'); if (!listo('patrimonio')) return null;
+      [accounts, txns] = await Promise.all([todas(c, 'accounts', 'id, data'), todas(c, 'txns', 'id, data, updated_at')]);
+    }
+    const porId = Object.fromEntries(accounts.map((a) => [a.id, { id: a.id, ...a.data }]));
+    const clasificar = UC.clasificadorPatrimonio({ empresas: UC.parsearEmpresas(CFG.empresas || 'uniformes=Uniformes Caracas,Uniformes|racks=Racks'), cuentas: UC.parsearEmpresas(CFG.cuentasEmpresas || '') });
+    const tasa = await tasaPara();
+    const movs = [];
+    for (const t of txns) {
+      const empresa = clasificar(t.data || {}, porId[t.data?.accountId]); if (!empresa) continue;
+      for (const m of UC.mapearTxnPatrimonio(t, { cuentaId: (id) => id, tasa, empresa })) {
+        const cta = porId[m.cuenta_id];
+        movs.push({ ...m, cuenta: cta ? cta.name : '—', monto_usd: m.moneda === 'VES' ? (m.tasa ? r2(m.monto / m.tasa) : null) : m.monto, fuente: 'Patrimonio', categoria: m.categoria || null });
+      }
+    }
+    return movs;
+  }),
+  // Centro de mando
+  tasas: () => memo('tasas', async () => {
+    if (DEMO) return DEMO.tasas;
+    if (!listo('centro')) return [];
+    const { data } = await cliente('centro').from('tasas').select('fecha, usdt, bcv').order('fecha'); return data || [];
+  }),
+  ventasDiarias: () => memo('ventas', async () => {
+    if (DEMO) return DEMO.ventas;
+    if (!listo('centro')) return null;
+    return todas(cliente('centro'), 'v_ventas_diarias', 'dia, ordenes, total_usd, mercancia_usd, diferencial_usd, ticket_promedio_usd', (q) => q.gte('dia', sumaDias(hoy(), -400)).order('dia'));
+  }),
+  metodos: (desde, hasta) => memo(`met:${desde}:${hasta}`, async () => {
+    if (DEMO) return DEMO.metodos;
+    if (!listo('centro')) return null;
+    return todas(cliente('centro'), 'v_ventas_metodo_pago', 'dia, metodo, ordenes, total_usd', (q) => q.gte('dia', desde).lte('dia', hasta));
+  }),
+  calientes: (dias) => memo(`cal:${dias}`, async () => {
+    if (DEMO) return DEMO.calientes;
+    if (!listo('centro')) return null;
+    const c = cliente('centro');
+    const [{ data: lineas, error: e1 }, { data: stock, error: e2 }] = await Promise.all([c.rpc('lineas_recientes', { dias }), c.rpc('existencia_por_producto')]);
+    if (e1 || e2) throw new Error((e1 || e2).message);
+    return UC.productosCalientes(lineas, Object.fromEntries(stock.map((s) => [s.producto_id, Number(s.existencia)])), { ventanaLarga: dias, limite: 15 });
+  }),
+  movCentro: () => memo('movc', async () => {
+    if (DEMO) return DEMO.movCentro;
+    if (!listo('centro')) return null;
+    // Solo lo registrado en el centro (bot o web): lo importado de Patrimonio y del cierre se lee de su fuente.
+    const filas = await todas(cliente('centro'), 'movimientos', 'id, fecha, tipo, monto, moneda, tasa, monto_usd, descripcion, referencia, empresa, origen, categorias(nombre), cuentas(nombre)',
+      (q) => q.not('origen', 'in', '("patrimonio","cierre_caja")').gte('fecha', sumaDias(hoy(), -400)));
+    return filas.map((f) => ({ ...f, categoria: f.categorias?.nombre ?? null, cuenta: f.cuentas?.nombre ?? '—', fuente: f.origen === 'bot' ? 'Bot' : 'Centro' }));
+  }),
+  tabla: (tabla, cols = '*', filtro) => memo('t:' + tabla + cols, async () => {
+    if (DEMO) return DEMO[tabla] ?? [];
+    if (!listo('centro')) return null;
+    return todas(cliente('centro'), tabla, cols, filtro);
+  }),
+  config: () => memo('config', async () => {
+    if (DEMO) return DEMO.config;
+    if (!listo('centro')) return {};
+    const { data } = await cliente('centro').from('config').select('clave, valor');
+    return Object.fromEntries((data || []).map((c) => [c.clave, c.valor]));
+  }),
+};
+const errDemo = () => Object.assign(new Error('Es una demostración: no se guarda nada.'), { demo: true });
+const toastErr = (e) => toast(e.demo ? e.message : 'No se pudo guardar: ' + e.message);
+async function guardar(tabla, fila, { onConflict } = {}) {
+  if (DEMO) throw errDemo();
+  const q = onConflict ? cliente('centro').from(tabla).upsert(fila, { onConflict }) : cliente('centro').from(tabla).upsert(fila);
+  const { data, error } = await q.select();
+  if (error) throw new Error(error.message);
+  CACHE.clear(); return data;
+}
+async function borrar(tabla, campo, valor) {
+  if (DEMO) throw errDemo();
+  const { error } = await cliente('centro').from(tabla).delete().eq(campo, valor);
+  if (error) throw new Error(error.message);
+  CACHE.clear();
+}
+
+/* Tasa para convertir Bs: la del centro (USDT) o, si no hay, la tasa anotada en el cierre de caja. */
+async function tasaPara() {
+  const t = await D.tasas();
+  if (t && t.length) return UC.buscadorDeTasas(t, 'usdt');
+  const c = await D.cierres();
+  return UC.buscadorDeTasas((c || []).filter((x) => x.tasa).map((x) => ({ fecha: x.fecha, usdt: x.tasa })), 'usdt');
+}
+async function tasaHoy() {
+  const t = await D.tasas();
+  if (t && t.length) return t[t.length - 1];
+  const c = (await D.cierres()) || [];
+  const ult = c.find((x) => x.tasa);
+  return ult ? { fecha: ult.fecha, usdt: ult.tasa, bcv: null, deCierre: true } : null;
+}
+
+/* =====================================================================
+   FILTROS GLOBALES
+   ===================================================================== */
+const F = { periodo: 'mes', desde: null, hasta: null, empresa: 'todas' };
+try { Object.assign(F, JSON.parse(localStorage.getItem('uc-filtros') || '{}')); } catch {}
+function rango() {
+  const h = hoy();
+  if (F.periodo === 'hoy') return { desde: h, hasta: h };
+  if (F.periodo === '7d') return { desde: sumaDias(h, -6), hasta: h };
+  if (F.periodo === 'mespasado') {
+    const [y, m] = h.split('-').map(Number); const py = m === 1 ? y - 1 : y, pm = m === 1 ? 12 : m - 1;
+    const ult = new Date(Date.UTC(py, pm, 0)).getUTCDate(); const p = (n) => String(n).padStart(2, '0');
+    return { desde: `${py}-${p(pm)}-01`, hasta: `${py}-${p(pm)}-${p(ult)}` };
+  }
+  if (F.periodo === 'otro' && F.desde && F.hasta) return { desde: F.desde, hasta: F.hasta };
+  return { desde: h.slice(0, 8) + '01', hasta: h };
+}
+function guardarFiltros() { try { localStorage.setItem('uc-filtros', JSON.stringify(F)); } catch {} }
+function htmlFiltros({ empresa = true, periodo = true } = {}) {
+  const p = [['hoy', 'Hoy'], ['7d', '7 días'], ['mes', 'Este mes'], ['mespasado', 'Mes pasado'], ['otro', 'Rango']];
+  const e = [['todas', 'Todas'], ['uniformes', 'Uniformes'], ['racks', 'Racks']];
+  const r = rango();
+  return `<div class="filters">
+    ${periodo ? `<div class="seg" role="group" aria-label="Período">${p.map(([k, l]) => `<button type="button" data-per="${k}" aria-pressed="${F.periodo === k}">${l}</button>`).join('')}</div>
+    ${F.periodo === 'otro' ? `<input type="date" id="f-desde" value="${r.desde}" aria-label="Desde"><input type="date" id="f-hasta" value="${r.hasta}" aria-label="Hasta">` : ''}` : ''}
+    ${empresa ? `<div class="seg" role="group" aria-label="Empresa">${e.map(([k, l]) => `<button type="button" data-emp="${k}" aria-pressed="${F.empresa === k}">${l}</button>`).join('')}</div>` : ''}
+  </div>`;
+}
+document.addEventListener('click', (ev) => {
+  const b = ev.target.closest('[data-per],[data-emp]'); if (!b) return;
+  if (b.dataset.per) { F.periodo = b.dataset.per; if (F.periodo === 'otro' && !F.desde) { const r = rango(); F.desde = r.desde; F.hasta = r.hasta; } }
+  if (b.dataset.emp) F.empresa = b.dataset.emp;
+  guardarFiltros(); render();
+});
+document.addEventListener('change', (ev) => {
+  if (ev.target.id === 'f-desde' || ev.target.id === 'f-hasta') { F.desde = $('#f-desde').value; F.hasta = $('#f-hasta').value; guardarFiltros(); render(); }
+});
+const enRango = (f, r) => f >= r.desde && f <= r.hasta;
+const deEmpresa = (m) => F.empresa === 'todas' || m.empresa === F.empresa;
+
+/* =====================================================================
+   PIEZAS DE INTERFAZ
+   ===================================================================== */
+const kpi = (l, v, s = '', cls = '') => `<div class="kpi"><span class="l">${l}</span><span class="v ${cls}">${v}</span>${s ? `<span class="s">${s}</span>` : ''}</div>`;
+function vacio(fuente, extra = '') {
+  return `<div class="empty"><strong>${esc(FUENTES[fuente].nombre)} sin conectar.</strong><span>${esc(FUENTES[fuente].desc)}</span>${extra}<a class="btn small" href="#conexiones">Conectar</a></div>`;
+}
+function barras(datos, { alto = 260, series, etiqueta }) {
+  // datos: [{x, ...valores}], series: [{k, color, nombre}] apiladas
+  if (!datos.length) return '<p class="muted small">Sin datos en el período.</p>';
+  const W = 760, H = alto, L = 52, B = 26, T = 10, R = 8;
+  const tot = datos.map((d) => series.reduce((s, se) => s + Math.max(0, d[se.k] || 0), 0));
+  const max = Math.max(1, ...tot);
+  const paso = Math.pow(10, Math.floor(Math.log10(max))); const tope = Math.ceil(max / paso) * paso;
+  const ticks = [0, tope / 2, tope];
+  const bw = (W - L - R) / datos.length;
+  const y = (v) => T + (H - T - B) * (1 - v / tope);
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(etiqueta)}">`;
+  for (const t of ticks) svg += `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line)" stroke-width="1"/><text x="${L - 6}" y="${y(t) + 4}" text-anchor="end" font-size="12" fill="var(--muted)" font-family="var(--f-mono)">${usd0(t)}</text>`;
+  datos.forEach((d, i) => {
+    let acc = 0;
+    for (const se of series) {
+      const v = Math.max(0, d[se.k] || 0); if (!v) continue;
+      svg += `<rect x="${L + i * bw + bw * 0.15}" width="${bw * 0.7}" y="${y(acc + v)}" height="${y(acc) - y(acc + v)}" fill="${se.color}" rx="1.5"><title>${esc(d.x)} · ${se.nombre}: ${usd(v)}</title></rect>`;
+      acc += v;
+    }
+    const cada = Math.ceil(datos.length / 10);
+    if (i % cada === 0 || i === datos.length - 1) svg += `<text x="${L + i * bw + bw / 2}" y="${H - 8}" text-anchor="middle" font-size="12" fill="var(--muted)" font-family="var(--f-mono)">${esc(fCorta(d.x))}</text>`;
+  });
+  return `<div class="chart">${svg}</svg></div><div class="legend">${series.map((s) => `<span><i class="sw" style="background:${s.color}"></i>${s.nombre}</span>`).join('')}</div>`;
+}
+function diasDel(r) { const out = []; for (let f = r.desde; f <= r.hasta; f = sumaDias(f, 1)) out.push(f); return out; }
+
+/* Ventas de Uniformes en el rango: Shopify si el centro está conectado; si no, lo que registran los cierres de caja. */
+async function ventasUniformes(r) {
+  const v = await D.ventasDiarias();
+  if (v) {
+    const m = Object.fromEntries(v.map((d) => [d.dia, d]));
+    const dias = diasDel(r).map((x) => ({ x, mercancia: Number(m[x]?.mercancia_usd || 0), diferencial: Number(m[x]?.diferencial_usd || 0), ordenes: Number(m[x]?.ordenes || 0) }));
+    return { fuente: 'Shopify', dias, separa: true };
+  }
+  const c = await D.cierres();
+  if (c) {
+    const m = Object.fromEntries(c.map((d) => [d.fecha, d]));
+    const dias = diasDel(r).map((x) => ({ x, mercancia: Number(m[x]?.ventas_usd || 0), diferencial: 0, ordenes: Number(m[x]?.pedidos || 0) }));
+    return { fuente: 'cierres de caja (solo POS)', dias, separa: false };
+  }
+  return null;
+}
+
+/* Todos los movimientos del período, de las tres fuentes, sin duplicar. */
+async function movimientos(r) {
+  const [pat, cen, cie] = await Promise.all([D.patrimonio(), D.movCentro(), D.cierres()]);
+  const salidas = (cie || []).flatMap((c) => c.egresos.map((e) => ({ ...e, cuenta: 'Caja tienda', monto_usd: e.monto, fuente: 'Cierre de caja' })));
+  const todos = [...(pat || []), ...(cen || []), ...salidas];
+  return { lista: todos.filter((m) => enRango(m.fecha, r)), fuentes: { patrimonio: !!pat, centro: !!cen, cierre: !!cie } };
+}
+
+/* Estado de resultados por empresa, sin doble conteo. */
+async function resultados(r) {
+  const [vu, { lista }] = await Promise.all([ventasUniformes(r), movimientos(r)]);
+  const base = () => ({ ventas: 0, diferencial: 0, otros: 0, cobros: 0, gastos: 0, gastosBs: 0, sinTasa: 0, porCat: {} });
+  const E = { uniformes: base(), racks: base() };
+  if (vu) for (const d of vu.dias) { E.uniformes.ventas += d.mercancia; E.uniformes.diferencial += d.diferencial; }
+  for (const m of lista) {
+    const e = E[m.empresa]; if (!e) continue;
+    if (m.tipo === 'ingreso') {
+      if (m.empresa === 'uniformes' && m.fuente === 'Patrimonio') e.cobros += m.monto_usd || 0; else e.otros += m.monto_usd || 0;
+    } else if (m.tipo === 'gasto') {
+      if (m.monto_usd == null) e.sinTasa++; else e.gastos += m.monto_usd;
+      if (m.moneda === 'VES') e.gastosBs += m.monto;
+      const k = m.categoria || (m.fuente === 'Cierre de caja' ? 'Salidas de caja' : 'Sin categoría');
+      e.porCat[k] = (e.porCat[k] || 0) + (m.monto_usd || 0);
+    }
+  }
+  for (const e of Object.values(E)) { e.ingresos = e.ventas + e.diferencial + e.otros; e.resultado = e.ingresos - e.gastos; }
+  return { E, vu };
+}
+
+/* =====================================================================
+   VISTAS
+   ===================================================================== */
+const VISTAS = [
+  ['resumen', 'Resumen', '·'],
+  ['ventas', 'Ventas', '1'],
+  ['contabilidad', 'Contabilidad', '2'],
+  ['pedidos', 'Pedidos y tracking', '3'],
+  ['calientes', 'Productos calientes', '4'],
+  ['diferencial', 'Diferencial cambiario', '5'],
+  ['costos', 'Costos fijos', '6'],
+  ['gastos', 'Gastos', '7'],
+  ['nomina', 'Nómina y comisión', '8'],
+  ['agenda', 'Agenda y recordatorios', '9'],
+  ['cierre', 'Cierre de caja', '◦'],
+  ['conexiones', 'Conexiones', '◦'],
+];
+
+const V = {};
+
+V.resumen = async () => {
+  const r = rango();
+  const [{ E, vu }, cie, th] = await Promise.all([resultados(r), D.cierres(), tasaHoy()]);
+  const ult = (cie || []).find((c) => c.estado);
+  const cons = { ing: E.uniformes.ingresos + E.racks.ingresos, gas: E.uniformes.gastos + E.racks.gastos };
+  const alertas = [];
+  if (ult && ult.estado && !/cuadr/i.test(ult.estado)) alertas.push(['p-bad', 'Cierre', `El cierre del ${fLarga(ult.fecha)} quedó <b>${esc(ult.estado)}</b> por ${usd(ult.diferencia_usd)}.`]);
+  const sinTasa = E.uniformes.sinTasa + E.racks.sinTasa;
+  if (sinTasa) alertas.push(['p-warn', 'Tasas', `${sinTasa} gasto(s) en Bs no tienen tasa del día y no se pudieron pasar a dólares.`]);
+  const cal = await D.calientes(28).catch(() => null);
+  for (const p of (cal || []).filter((x) => x.alertas.includes('quiebre_de_stock')).slice(0, 3)) alertas.push(['p-warn', 'Inventario', `<b>${esc(p.titulo)}</b> se agota en ~${p.diasCobertura} días (quedan ${p.existencia}).`]);
+  const pend = ((await D.tabla('recordatorios', '*')) || []).filter((x) => !x.enviado_en && x.cuando.slice(0, 10) <= sumaDias(hoy(), 2)).slice(0, 3);
+  for (const x of pend) alertas.push(['p-n', 'Agenda', `${esc(x.texto)} · ${new Date(x.cuando).toLocaleString('es-VE', { weekday: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'America/Caracas' })}`]);
+  const serie = vu ? vu.dias : [];
+  return `
+  <div class="top"><div><h1>Resumen</h1><p class="sub">${fLarga(r.desde)} → ${fLarga(r.hasta)}${th ? ` · tasa USDT ${nf(2).format(th.usdt)}${th.bcv ? ` · BCV ${nf(2).format(th.bcv)}` : ''}` : ''}</p></div>${htmlFiltros({ empresa: false })}</div>
+  <div class="kpis">
+    ${kpi('Ventas Uniformes', usd(E.uniformes.ventas), vu ? `+ ${usd(E.uniformes.diferencial)} diferencial` : 'Conecta Shopify o el cierre', 'emp-u')}
+    ${kpi('Ingresos Racks', usd(E.racks.ingresos), 'desde Patrimonio', 'emp-r')}
+    ${kpi('Gastos del grupo', usd(cons.gas), `Uniformes ${usd0(E.uniformes.gastos)} · Racks ${usd0(E.racks.gastos)}`)}
+    ${kpi('Resultado consolidado', usd(cons.ing - cons.gas), 'antes de costo de mercancía', cons.ing - cons.gas < 0 ? 'emp-r' : '')}
+  </div>
+  <div class="grid cols-2" style="margin-top:16px">
+    <section class="panel"><div class="panel-h"><h2>Ventas diarias de la tienda</h2><span class="muted small">${vu ? 'Fuente: ' + vu.fuente : ''}</span></div>
+      ${vu ? barras(serie, { etiqueta: 'Ventas diarias', series: vu.separa ? [{ k: 'mercancia', color: 'var(--ceil)', nombre: 'Mercancía' }, { k: 'diferencial', color: 'var(--ceil-2)', nombre: 'Diferencial cambiario' }] : [{ k: 'mercancia', color: 'var(--ceil)', nombre: 'Ventas POS' }] }) : vacio('centro', '<span>O conecta el cierre de caja para ver las ventas del POS.</span>')}
+    </section>
+    <section class="panel"><div class="panel-h"><h2>Pendiente de atención</h2></div>
+      ${alertas.length ? `<div class="alerts">${alertas.map(([c, t, m]) => `<div class="alert"><span class="pill ${c}">${t}</span><span>${m}</span></div>`).join('')}</div>` : '<p class="muted">Nada pendiente.</p>'}
+      ${ult ? `<details><summary class="small">Último cierre de caja · ${fLarga(ult.fecha)}</summary>${tablaCierre(ult)}</details>` : ''}
+    </section>
+  </div>
+  <section class="panel" style="margin-top:16px"><div class="panel-h"><h2>Resultados por empresa</h2><a class="small" href="#contabilidad">Ver contabilidad</a></div>${tablaResultados(E)}</section>`;
+};
+
+function tablaResultados(E) {
+  const u = E.uniformes, k = E.racks;
+  return `<div class="tbl-wrap"><table><thead><tr><th></th><th class="num">Uniformes</th><th class="num">Racks</th><th class="num">Consolidado</th></tr></thead><tbody>
+    <tr><td>Ventas de mercancía</td><td class="num">${usd(u.ventas)}</td><td class="num">—</td><td class="num">${usd(u.ventas)}</td></tr>
+    <tr><td>Diferencial cambiario</td><td class="num">${usd(u.diferencial)}</td><td class="num">—</td><td class="num">${usd(u.diferencial)}</td></tr>
+    <tr><td>Otros ingresos</td><td class="num">${usd(u.otros)}</td><td class="num">${usd(k.otros)}</td><td class="num">${usd(u.otros + k.otros)}</td></tr>
+    <tr><td><strong>Ingresos</strong></td><td class="num"><strong>${usd(u.ingresos)}</strong></td><td class="num"><strong>${usd(k.ingresos)}</strong></td><td class="num"><strong>${usd(u.ingresos + k.ingresos)}</strong></td></tr>
+    <tr><td>Gastos <span class="muted small">(pagado en Bs: ${bs(u.gastosBs + k.gastosBs)})</span></td><td class="num">${usd(u.gastos)}</td><td class="num">${usd(k.gastos)}</td><td class="num">${usd(u.gastos + k.gastos)}</td></tr>
+    <tr><td><strong>Resultado</strong></td><td class="num"><strong>${usd(u.resultado)}</strong></td><td class="num"><strong>${usd(k.resultado)}</strong></td><td class="num"><strong>${usd(u.resultado + k.resultado)}</strong></td></tr>
+  </tbody></table></div>
+  ${u.cobros ? `<p class="small muted">Patrimonio registra ${usd(u.cobros)} de cobros de Uniformes en el período. No se suman: esas ventas ya están contadas en Shopify.</p>` : ''}`;
+}
+
+V.ventas = async () => {
+  const r = rango();
+  const vu = await ventasUniformes(r);
+  if (!vu) return `<div class="top"><div><h1>Ventas</h1></div></div>${vacio('centro')}`;
+  const tot = vu.dias.reduce((a, d) => ({ m: a.m + d.mercancia, d: a.d + d.diferencial, o: a.o + d.ordenes }), { m: 0, d: 0, o: 0 });
+  const met = await D.metodos(r.desde, r.hasta);
+  const agg = {};
+  for (const x of met || []) { if (!enRango(x.dia, r)) continue; const k = ({ cash: 'Efectivo', 'cashea ve': 'Cashea' })[String(x.metodo).toLowerCase()] || x.metodo; agg[k] = agg[k] || { o: 0, t: 0 }; agg[k].o += Number(x.ordenes); agg[k].t += Number(x.total_usd); }
+  const metTot = Object.values(agg).reduce((s, v) => s + v.t, 0) || 1;
+  const habiles = vu.dias.filter((d) => d.ordenes > 0).length || 1;
+  return `
+  <div class="top"><div><h1>Ventas · Uniformes Caracas</h1><p class="sub">Fuente: ${vu.fuente}. ${vu.separa ? 'La mercancía va separada de la línea #69 de diferencial cambiario.' : 'Conecta el centro para separar mercancía y diferencial.'}</p></div>${htmlFiltros({ empresa: false })}</div>
+  <div class="kpis">
+    ${kpi('Mercancía', usd(tot.m), `${tot.o} órdenes`, 'emp-u')}
+    ${kpi('Diferencial cambiario', usd(tot.d), tot.m ? `${nf(1).format(tot.d / tot.m * 100)}% sobre la mercancía` : '')}
+    ${kpi('Ticket promedio', usd(tot.o ? tot.m / tot.o : 0), 'solo mercancía')}
+    ${kpi('Promedio por día con ventas', usd((tot.m + tot.d) / habiles), `${habiles} días con ventas`)}
+  </div>
+  <div class="grid cols-2" style="margin-top:16px">
+    <section class="panel"><h2>Por día</h2>${barras(vu.dias, { etiqueta: 'Ventas por día', series: [{ k: 'mercancia', color: 'var(--ceil)', nombre: 'Mercancía' }, { k: 'diferencial', color: 'var(--ceil-2)', nombre: 'Diferencial' }] })}</section>
+    <section class="panel"><h2>Por método de pago</h2>
+      ${met ? `<div class="tbl-wrap"><table><thead><tr><th>Método</th><th class="num">Órdenes</th><th class="num">Total</th><th style="width:30%"></th></tr></thead><tbody>
+        ${Object.entries(agg).sort((a, b) => b[1].t - a[1].t).map(([k, v]) => `<tr><td>${esc(k)}</td><td class="num">${v.o}</td><td class="num">${usd(v.t)}</td><td><div class="bar-h"><i style="width:${(v.t / metTot * 100).toFixed(1)}%"></i></div></td></tr>`).join('')}
+      </tbody></table></div><p class="small muted">Una orden con pago mixto cuenta en cada método.</p>` : vacio('centro')}
+    </section>
+  </div>`;
+};
+
+V.contabilidad = async () => {
+  const r = rango();
+  const [{ E, vu }, { lista, fuentes }] = await Promise.all([resultados(r), movimientos(r)]);
+  const L = lista.filter(deEmpresa).sort((a, b) => b.fecha.localeCompare(a.fecha));
+  const porCuenta = {};
+  for (const m of L) { const k = m.cuenta || '—'; porCuenta[k] = porCuenta[k] || { e: m.empresa, in: 0, out: 0, n: 0, moneda: m.moneda }; porCuenta[k][m.tipo === 'ingreso' ? 'in' : 'out'] += Number(m.monto); porCuenta[k].n++; }
+  const faltan = Object.entries(fuentes).filter(([, v]) => !v).map(([k]) => FUENTES[k].nombre);
+  return `
+  <div class="top"><div><h1>Contabilidad multimoneda</h1><p class="sub">Uniformes y Racks, en USD. Los montos en Bs se convierten con la tasa USDT del día (o la tasa del cierre de caja si no hay otra).</p></div>${htmlFiltros()}</div>
+  ${faltan.length ? `<div class="banner">Falta conectar: ${faltan.join(', ')}. Las cifras de abajo no las incluyen.</div>` : ''}
+  <section class="panel">${tablaResultados(E)}</section>
+  <div class="grid cols-2" style="margin-top:16px">
+    <section class="panel"><h2>Gastos por categoría</h2>${catTabla(F.empresa === 'todas' ? fusionCat(E) : E[F.empresa].porCat)}</section>
+    <section class="panel"><h2>Movimiento por cuenta</h2><div class="tbl-wrap"><table><thead><tr><th>Cuenta</th><th></th><th class="num">Entró</th><th class="num">Salió</th></tr></thead><tbody>
+      ${Object.entries(porCuenta).sort((a, b) => b[1].out + b[1].in - a[1].out - a[1].in).map(([k, v]) => `<tr><td>${esc(k)}</td><td>${empPill(v.e)}</td><td class="num">${v.moneda === 'VES' ? bs(v.in) : usd(v.in)}</td><td class="num">${v.moneda === 'VES' ? bs(v.out) : usd(v.out)}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">Sin movimientos.</td></tr>'}
+    </tbody></table></div></section>
+  </div>
+  <section class="panel" style="margin-top:16px"><div class="panel-h"><h2>Movimientos</h2><span class="muted small">${L.length} en el período</span></div>${tablaMovs(L.slice(0, 300))}</section>`;
+};
+function fusionCat(E) { const o = { ...E.uniformes.porCat }; for (const [k, v] of Object.entries(E.racks.porCat)) o[k] = (o[k] || 0) + v; return o; }
+function catTabla(c) {
+  const e = Object.entries(c).sort((a, b) => b[1] - a[1]); const tot = e.reduce((s, x) => s + x[1], 0) || 1;
+  if (!e.length) return '<p class="muted">Sin gastos en el período.</p>';
+  return `<div class="tbl-wrap"><table><tbody>${e.map(([k, v]) => `<tr><td>${esc(k)}</td><td class="num">${usd(v)}</td><td style="width:35%"><div class="bar-h"><i style="width:${(v / tot * 100).toFixed(1)}%"></i></div></td></tr>`).join('')}</tbody></table></div>`;
+}
+function tablaMovs(L) {
+  if (!L.length) return '<p class="muted">Sin movimientos en el período.</p>';
+  return `<div class="tbl-wrap"><table><thead><tr><th>Fecha</th><th>Empresa</th><th>Descripción</th><th>Cuenta</th><th>Fuente</th><th class="num">Monto</th><th class="num">USD</th></tr></thead><tbody>
+  ${L.map((m) => `<tr><td class="mono">${fCorta(m.fecha)}</td><td>${empPill(m.empresa)}</td><td>${esc(m.descripcion || '—')}${m.categoria ? ` <span class="muted small">· ${esc(m.categoria)}</span>` : ''}</td><td>${esc(m.cuenta || '—')}</td><td class="small muted">${esc(m.fuente)}</td>
+  <td class="num">${m.tipo === 'gasto' ? '−' : '+'}${m.moneda === 'VES' ? bs(m.monto) : usd(m.monto)}</td><td class="num">${m.monto_usd == null ? '<span class="pill p-warn">sin tasa</span>' : usd(m.monto_usd)}</td></tr>`).join('')}
+  </tbody></table></div>`;
+}
+
+V.gastos = async () => {
+  const r = rango();
+  const { lista } = await movimientos(r);
+  const G = lista.filter((m) => m.tipo === 'gasto' && deEmpresa(m)).sort((a, b) => b.fecha.localeCompare(a.fecha));
+  const cats = (await D.tabla('categorias', 'id, nombre, tipo')) || [];
+  const tot = G.reduce((s, m) => s + (m.monto_usd || 0), 0);
+  const centroOk = listo('centro');
+  return `
+  <div class="top"><div><h1>Gastos</h1><p class="sub">Junta lo de Patrimonio, las salidas de caja del cierre y lo que se registra aquí o por el bot.</p></div>${htmlFiltros()}</div>
+  <div class="kpis">${kpi('Total del período', usd(tot), `${G.length} gastos`)}${kpi('Pagado en Bs', bs(G.filter((m) => m.moneda === 'VES').reduce((s, m) => s + m.monto, 0)))}${kpi('Pagado en USD', usd(G.filter((m) => m.moneda === 'USD').reduce((s, m) => s + m.monto, 0)))}</div>
+  <section class="panel" style="margin-top:16px"><h2>Registrar un gasto</h2>
+    ${centroOk ? `<form class="form" id="f-gasto">
+      <label>Empresa<select id="g-emp"><option value="uniformes">Uniformes Caracas</option><option value="racks">Racks</option></select></label>
+      <label>Fecha<input type="date" id="g-fecha" value="${hoy()}" required></label>
+      <label>Monto<input type="number" id="g-monto" step="0.01" min="0.01" required></label>
+      <label>Moneda<select id="g-mon"><option value="USD">USD</option><option value="VES">Bs</option></select></label>
+      <label>Categoría<select id="g-cat"><option value="">—</option>${cats.filter((c) => c.tipo === 'gasto').map((c) => `<option value="${c.id}">${esc(c.nombre)}</option>`).join('')}</select></label>
+      <label>Referencia<input type="text" id="g-ref" placeholder="Opcional"></label>
+      <label class="wide">Descripción<input type="text" id="g-desc" required placeholder="Ej. Limpieza de la tienda"></label>
+      <button class="btn" type="submit">Guardar gasto</button></form>
+      <p class="small muted">Si es en Bs se guarda con la tasa USDT del día. Patrimonio y el cierre de caja se editan en sus propias páginas.</p>` : vacio('centro')}
+  </section>
+  <section class="panel" style="margin-top:16px"><h2>Detalle</h2>${tablaMovs(G.slice(0, 400))}</section>`;
+};
+async function enviarGasto(ev) {
+  ev.preventDefault();
+  const moneda = $('#g-mon').value, fecha = $('#g-fecha').value;
+  let tasa = null;
+  if (moneda === 'VES') { const t = await tasaPara(); tasa = t(fecha); if (!tasa) { toast('No hay tasa para esa fecha. Cárgala en el bot con "tasa 650 bcv 500".'); return; } }
+  try {
+    await guardar('movimientos', { fecha, tipo: 'gasto', monto: Number($('#g-monto').value), moneda, tasa, descripcion: $('#g-desc').value.trim(), referencia: $('#g-ref').value.trim() || null, categoria_id: $('#g-cat').value ? Number($('#g-cat').value) : null, empresa: $('#g-emp').value, origen: 'web', creado_por: S.yo?.nombre || 'web' });
+    toast('Gasto guardado.'); render();
+  } catch (e) { toastErr(e); }
+}
+
+V.cierre = async () => {
+  const c = await D.cierres();
+  if (!c) return `<div class="top"><h1>Cierre de caja</h1></div>${vacio('cierre')}`;
+  const r = rango();
+  const L = c.filter((x) => enRango(x.fecha, r));
+  const dif = L.reduce((s, x) => s + Number(x.diferencia_usd || 0), 0);
+  const cuenta = (re) => L.filter((x) => re.test(x.estado || '')).length;
+  return `
+  <div class="top"><div><h1>Cierre de caja</h1><p class="sub">Leído de la página de cierre. Para corregir un cierre, hazlo allá: aquí se actualiza solo.</p></div>${htmlFiltros({ empresa: false })}</div>
+  <div class="kpis">${kpi('Cierres', L.length, `${cuenta(/cuadr/i)} cuadrados · ${cuenta(/falt/i)} con faltante · ${cuenta(/sobr/i)} con sobrante`)}${kpi('Diferencia neta', usd(dif), 'contado − sistema', dif < -1 ? 'emp-r' : '')}${kpi('Ventas POS', usd(L.reduce((s, x) => s + Number(x.ventas_usd || 0), 0)))}${kpi('Salidas de caja', usd(L.reduce((s, x) => s + Number(x.egresos_usd || 0), 0)))}</div>
+  <section class="panel" style="margin-top:16px"><div class="tbl-wrap"><table><thead><tr><th>Fecha</th><th>Estado</th><th>Responsable</th><th class="num">Ventas</th><th class="num">Diferencia</th><th class="num">Cashea fact.</th><th class="num">Salidas</th><th class="num">Tasa</th></tr></thead><tbody>
+  ${L.map((x) => `<tr><td><details><summary class="mono">${fLarga(x.fecha)}</summary>${tablaCierre(x)}</details></td><td>${pillEstado(x.estado)}</td><td>${esc(x.responsable || '—')}</td><td class="num">${usd(x.ventas_usd)}</td><td class="num">${usd(x.diferencia_usd)}</td><td class="num">${x.cashea_facturado != null ? usd(x.cashea_facturado) : '—'}</td><td class="num">${Number(x.egresos_usd) ? usd(x.egresos_usd) : '—'}</td><td class="num">${x.tasa ? nf(2).format(x.tasa) : '—'}</td></tr>`).join('') || '<tr><td colspan="8" class="muted">No hay cierres en el período.</td></tr>'}
+  </tbody></table></div></section>`;
+};
+const pillEstado = (e) => !e ? '<span class="pill p-n">sin guardar</span>' : /cuadr/i.test(e) ? `<span class="pill p-ok">${esc(e)}</span>` : /falt/i.test(e) ? `<span class="pill p-bad">${esc(e)}</span>` : `<span class="pill p-warn">${esc(e)}</span>`;
+const NOM_MET = { efectivo: 'Efectivo', zelle: 'Zelle', pagomovil: 'Pago móvil', transferencia: 'Transferencia', punto: 'Punto de venta', cashea: 'Cashea' };
+function tablaCierre(x) {
+  const pm = Object.entries(x.por_metodo || {});
+  return `<div class="tbl-wrap"><table><thead><tr><th>Método</th><th class="num">Sistema</th><th class="num">Contado</th><th class="num">Dif.</th></tr></thead><tbody>
+    ${pm.map(([k, v]) => `<tr><td>${esc(NOM_MET[k] || k)}</td><td class="num">${usd(v.sistema)}</td><td class="num">${v.contado == null ? '—' : usd(v.contado)}</td><td class="num">${v.contado == null ? '—' : usd(v.contado - v.sistema)}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">Sin detalle por método.</td></tr>'}
+  </tbody></table></div>${(x.egresos || []).length ? `<p class="small">Salidas: ${x.egresos.map((e) => `${esc(e.descripcion)} ${usd(e.monto)}`).join(' · ')}</p>` : ''}${x.notas ? `<p class="small muted">${esc(x.notas)}</p>` : ''}`;
+}
+
+V.pedidos = async () => {
+  if (!listo('centro')) return `<div class="top"><h1>Pedidos y tracking</h1></div>${vacio('centro')}`;
+  const [ped, prov, env, fac] = await Promise.all([D.tabla('pedidos', '*'), D.tabla('proveedores', '*'), D.tabla('envios', '*'), D.tabla('facturas', '*')]);
+  const pn = Object.fromEntries(prov.map((p) => [p.id, p.nombre]));
+  const lista = ped.filter(deEmpresa).sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
+  const abiertos = lista.filter((p) => !['recibido', 'cerrado'].includes(p.estado));
+  const ESTADOS = ['borrador', 'pedido', 'pagado', 'en_transito', 'en_aduana', 'recibido', 'cerrado'];
+  return `
+  <div class="top"><div><h1>Pedidos, facturas y tracking</h1><p class="sub">Compras a proveedores de Uniformes y Racks, con su factura y su número de guía.</p></div>${htmlFiltros({ periodo: false })}</div>
+  <div class="kpis">${kpi('Pedidos abiertos', abiertos.length)}${kpi('En tránsito o aduana', abiertos.filter((p) => /transito|aduana/.test(p.estado)).length)}${kpi('Comprometido', usd(abiertos.reduce((s, p) => s + Number(p.total || 0) + Number(p.flete_usd || 0) + Number(p.nacionalizacion_usd || 0), 0)), 'mercancía + flete + nacionalización')}</div>
+  <section class="panel" style="margin-top:16px"><h2>Nuevo pedido</h2>
+    <form class="form" id="f-pedido">
+      <label>Empresa<select id="p-emp"><option value="uniformes">Uniformes Caracas</option><option value="racks">Racks</option></select></label>
+      <label>Proveedor<input type="text" id="p-prov" list="l-prov" required placeholder="KOI, WonderWink…"></label>
+      <datalist id="l-prov">${prov.map((p) => `<option value="${esc(p.nombre)}">`).join('')}</datalist>
+      <label>N.º de pedido<input type="text" id="p-cod"></label>
+      <label>Fecha<input type="date" id="p-fecha" value="${hoy()}"></label>
+      <label>Total USD<input type="number" id="p-total" step="0.01" min="0"></label>
+      <label>Flete USD<input type="number" id="p-flete" step="0.01" min="0"></label>
+      <label class="wide">Notas<input type="text" id="p-notas"></label>
+      <button class="btn" type="submit">Crear pedido</button>
+    </form>
+  </section>
+  <section class="panel" style="margin-top:16px"><h2>Pedidos</h2>
+  ${lista.length ? lista.map((p) => {
+    const ev = env.filter((e) => e.pedido_id === p.id), fv = fac.filter((f) => f.pedido_id === p.id);
+    return `<details class="panel" style="padding:12px"${abiertos.includes(p) ? ' open' : ''}><summary><strong>${esc(pn[p.proveedor_id] || 'Proveedor')}</strong> ${p.codigo ? `<span class="mono">${esc(p.codigo)}</span>` : ''} · ${fCorta(String(p.fecha))} · ${usd(p.total)} ${empPill(p.empresa)} ${pillPedido(p.estado)}</summary>
+      <div class="grid cols-3" style="margin-top:10px">
+        <div class="grid" style="gap:6px"><h3>Estado</h3><select data-estado="${p.id}" aria-label="Estado del pedido">${ESTADOS.map((s) => `<option value="${s}"${s === p.estado ? ' selected' : ''}>${s.replace('_', ' ')}</option>`).join('')}</select>${p.notas ? `<p class="small muted">${esc(p.notas)}</p>` : ''}</div>
+        <div class="grid" style="gap:6px"><h3>Tracking</h3>
+          ${ev.map((e) => `<div class="small"><span class="mono">${esc(e.tracking)}</span> · ${esc(e.transportista || '')} ${e.estado ? `· ${esc(e.estado)}` : ''} · <a href="${linkTracking(e)}" target="_blank" rel="noopener">Rastrear</a></div>`).join('') || '<span class="small muted">Sin guía.</span>'}
+          <form class="form" data-envio="${p.id}" style="grid-template-columns:1fr 1fr auto"><select aria-label="Transportista"><option>DHL</option><option>FedEx</option><option>UPS</option><option>USPS</option><option>Otro</option></select><input type="text" required placeholder="N.º de guía" aria-label="Número de guía"><button class="btn small" type="submit">Añadir</button></form>
+        </div>
+        <div class="grid" style="gap:6px"><h3>Facturas</h3>
+          ${fv.map((f) => `<div class="small">${esc(f.numero || 'Factura')} · ${f.monto ? usd(f.monto) : ''} ${f.archivo_url ? `<button class="btn ghost small" type="button" data-ver="${esc(f.archivo_url)}">Ver archivo</button>` : ''}</div>`).join('') || '<span class="small muted">Sin factura.</span>'}
+          <form class="form" data-factura="${p.id}" style="grid-template-columns:1fr 1fr"><input type="text" placeholder="N.º factura" aria-label="Número de factura"><input type="number" step="0.01" placeholder="Monto USD" aria-label="Monto"><input type="file" accept="image/*,application/pdf" class="wide" aria-label="Archivo de la factura"><button class="btn small wide" type="submit">Subir factura</button></form>
+        </div>
+      </div></details>`;
+  }).join('') : '<p class="muted">Todavía no hay pedidos.</p>'}
+  </section>`;
+};
+const pillPedido = (e) => `<span class="pill ${e === 'recibido' || e === 'cerrado' ? 'p-ok' : /transito|aduana/.test(e) ? 'p-warn' : 'p-n'}">${esc(String(e).replace('_', ' '))}</span>`;
+function linkTracking(e) {
+  const t = encodeURIComponent(e.tracking);
+  return ({ DHL: `https://www.dhl.com/ve-es/home/rastreo.html?tracking-id=${t}`, FedEx: `https://www.fedex.com/fedextrack/?trknbr=${t}`, UPS: `https://www.ups.com/track?tracknum=${t}`, USPS: `https://tools.usps.com/go/TrackConfirmAction?tLabels=${t}` })[e.transportista] || `https://t.17track.net/es#nums=${t}`;
+}
+async function enviarPedido(ev) {
+  ev.preventDefault();
+  try {
+    const nombre = $('#p-prov').value.trim();
+    const prov = (await D.tabla('proveedores', '*')) || [];
+    let p = prov.find((x) => x.nombre.toLowerCase() === nombre.toLowerCase());
+    if (!p) { const r = await guardar('proveedores', { nombre }, { onConflict: 'nombre' }); p = r?.[0]; }
+    await guardar('pedidos', { proveedor_id: p?.id ?? null, codigo: $('#p-cod').value.trim() || null, fecha: $('#p-fecha').value, total: Number($('#p-total').value) || null, flete_usd: Number($('#p-flete').value) || 0, notas: $('#p-notas').value.trim() || null, empresa: $('#p-emp').value, estado: 'pedido' });
+    toast('Pedido creado.'); render();
+  } catch (e) { toastErr(e); }
+}
+
+V.calientes = async () => {
+  const dias = Number(F.dCal || 28);
+  const L = await D.calientes(dias);
+  if (!L) return `<div class="top"><h1>Productos calientes</h1></div>${vacio('centro')}`;
+  const ETQ = { quiebre_de_stock: ['p-warn', 'se agota pronto'], agotado: ['p-bad', 'agotado'], acelerando: ['p-ok', 'acelerando'], enfriando: ['p-n', 'enfriando'], precio_bajo: ['p-n', 'precio de liquidación'] };
+  return `
+  <div class="top"><div><h1>Productos calientes reales</h1><p class="sub">Pesa 50% ventas en USD, 30% clientes distintos y 20% aceleración de la última semana. No cuenta la línea de diferencial cambiario.</p></div>
+  <div class="seg" role="group" aria-label="Ventana">${[14, 28, 60, 90].map((d) => `<button type="button" data-dcal="${d}" aria-pressed="${dias === d}">${d} días</button>`).join('')}</div></div>
+  <section class="panel"><div class="tbl-wrap"><table><thead><tr><th>#</th><th>Producto</th><th class="num">Ventas</th><th class="num">Uds</th><th class="num">Clientes</th><th class="num">Tendencia</th><th class="num">Stock</th><th class="num">Días de inventario</th><th>Alertas</th></tr></thead><tbody>
+  ${L.map((p, i) => `<tr><td class="mono">${i + 1}</td><td>${esc(p.titulo)}</td><td class="num">${usd(p.ventasUsd)}</td><td class="num">${Math.round(p.unidades)}</td><td class="num">${p.ordenes}</td><td class="num">${p.tendencia >= 1 ? '▲' : '▼'} ${nf(2).format(p.tendencia)}</td><td class="num">${p.existencia ?? '—'}</td><td class="num">${p.diasCobertura ?? '—'}</td><td>${p.alertas.map((a) => `<span class="pill ${ETQ[a][0]}">${ETQ[a][1]}</span>`).join(' ')}</td></tr>`).join('')}
+  </tbody></table></div><p class="small muted">Tendencia: ritmo de la última semana contra el promedio de la ventana (1,00 = igual). Días de inventario = existencia ÷ unidades vendidas por día.</p></section>`;
+};
+document.addEventListener('click', (ev) => { const b = ev.target.closest('[data-dcal]'); if (b) { F.dCal = Number(b.dataset.dcal); guardarFiltros(); render(); } });
+
+V.diferencial = async () => {
+  const th = await tasaHoy();
+  const cfg = await D.config();
+  return `
+  <div class="top"><div><h1>Diferencial cambiario</h1><p class="sub">Cuánto cobrar en Bs y cuánto va en la línea #69 cuando el cliente paga en bolívares a tasa BCV.</p></div></div>
+  <div class="grid cols-2">
+    <section class="panel"><h2>Calculadora</h2>
+      <form class="form" id="f-dif">
+        <label>Monto de la venta (USD)<input type="number" id="d-monto" value="100" step="0.01" min="0"></label>
+        <label>Tasa USDT<input type="number" id="d-usdt" value="${th?.usdt ?? ''}" step="0.01" min="0" placeholder="Bs por USD"></label>
+        <label>Tasa BCV<input type="number" id="d-bcv" value="${th?.bcv ?? ''}" step="0.01" min="0" placeholder="Bs por USD"></label>
+      </form>
+      <div id="d-out"></div>
+      ${th ? `<p class="small muted">Tasas del ${fLarga(th.fecha)}${th.deCierre ? ' tomadas del cierre de caja' : ''}.</p>` : ''}
+    </section>
+    <section class="panel"><h2>Fórmula de precio</h2>
+      <p class="small muted">USD × USDT ÷ BCV, luego IVA ${cfg.iva_pct ?? 16}% y Cashea ${cfg.cashea_pct ?? 5}%, redondeado hacia arriba al múltiplo de ${cfg.redondeo_bs ?? 5}.</p>
+      <form class="form"><label>Precio base (USD)<input type="number" id="pf-usd" value="20" step="0.01" min="0"></label></form>
+      <div id="pf-out"></div>
+    </section>
+  </div>`;
+};
+function calcDif() {
+  const m = Number($('#d-monto')?.value), u = Number($('#d-usdt')?.value), b = Number($('#d-bcv')?.value);
+  const out = $('#d-out'), pf = $('#pf-out'); if (!out) return;
+  if (!(u > 0 && b > 0)) { out.innerHTML = '<p class="muted">Escribe las dos tasas.</p>'; if (pf) pf.innerHTML = ''; return; }
+  const d = UC.calcularDiferencial({ montoUsd: m || 0, usdt: u, bcv: b });
+  out.innerHTML = `<div class="kpis">${kpi('Cobrar en Bs', bs(d.bsACobrar))}${kpi('Línea #69', usd(d.diferencialUsd), `brecha ${nf(1).format(d.brechaPct)}%`)}${kpi('Ref. BCV', usd(d.refBcvUsd))}</div><p class="small">Si se cobra a BCV sin diferencial se pierden <strong>${usd(d.perdidaSinDiferencialUsd)}</strong> en esta venta.</p>`;
+  const cfg = CACHE.get('config');
+  Promise.resolve(cfg).then((c = {}) => {
+    const p = UC.formulaPrecio({ usd: Number($('#pf-usd').value) || 0, usdt: u, bcv: b, ivaPct: Number(c.iva_pct ?? 16), casheaPct: Number(c.cashea_pct ?? 5), multiplo: Number(c.redondeo_bs ?? 5) });
+    pf.innerHTML = `<div class="tbl-wrap"><table><tbody><tr><td>En Bs a USDT</td><td class="num">${bs(p.pasos.bs)}</td></tr><tr><td>Ref. BCV</td><td class="num">${usd(p.pasos.refBcv)}</td></tr><tr><td>Con IVA</td><td class="num">${usd(p.pasos.conIva)}</td></tr><tr><td>Con Cashea</td><td class="num">${usd(p.pasos.conCashea)}</td></tr><tr><td><strong>Precio de lista</strong></td><td class="num"><strong>${usd(p.precioRefUsd)}</strong></td></tr><tr><td>En Bs (BCV)</td><td class="num">${bs(p.precioBs)}</td></tr></tbody></table></div>`;
+  });
+}
+document.addEventListener('input', (ev) => { if (['d-monto', 'd-usdt', 'd-bcv', 'pf-usd'].includes(ev.target.id)) calcDif(); });
+
+V.costos = async () => {
+  if (!listo('centro')) return `<div class="top"><h1>Costos fijos</h1></div>${vacio('centro')}`;
+  const costos = (await D.tabla('costos_fijos', '*')) || [];
+  const th = await tasaHoy();
+  const emp = F.empresa === 'todas' ? 'uniformes' : F.empresa;
+  const lista = costos.filter((c) => c.empresa === emp && c.activo !== false);
+  const margen = Number(F.margen || 40);
+  let res = null, err = '';
+  try { if (lista.length && th) res = UC.calcularCostosFijos(lista, { tasa: Number(th.usdt), margenBrutoPct: margen }); } catch (e) { err = e.message; }
+  return `
+  <div class="top"><div><h1>Costos fijos · ${EMP[emp]}</h1><p class="sub">Todo llevado a mensual y a USD con la tasa USDT${th ? ` (${nf(2).format(th.usdt)})` : ''}. El punto de equilibrio usa el margen bruto que pongas.</p></div>
+  <div class="filters"><div class="seg" role="group" aria-label="Empresa">${['uniformes', 'racks'].map((k) => `<button type="button" data-emp="${k}" aria-pressed="${emp === k}">${k === 'racks' ? 'Racks' : 'Uniformes'}</button>`).join('')}</div>
+  <label class="small muted">Margen bruto % <input type="number" id="c-margen" value="${margen}" min="1" max="99" step="1" style="width:80px"></label></div></div>
+  ${res ? `<div class="kpis">${kpi('Costos fijos al mes', usd(res.totalMensualUsd), bs(res.totalMensualVes))}${kpi('Equilibrio al mes', usd(res.ventasEquilibrioMesUsd), `con ${margen}% de margen`)}${kpi('Equilibrio por día', usd(res.ventasEquilibrioDiaUsd), '26 días de trabajo')}${kpi('Costo fijo por día', usd(res.costoDiarioUsd))}</div>` : `<div class="banner">${err || (th ? 'Agrega los costos fijos para calcular el equilibrio.' : 'Falta la tasa del día para convertir los costos en Bs.')}</div>`}
+  <div class="grid cols-2" style="margin-top:16px">
+    <section class="panel"><h2>Costos</h2><div class="tbl-wrap"><table><thead><tr><th>Concepto</th><th class="num">Monto</th><th>Frecuencia</th><th class="num">Al mes USD</th><th></th></tr></thead><tbody>
+      ${lista.map((c) => { const d = res?.detalle.find((x) => x.concepto === c.concepto); return `<tr><td>${esc(c.concepto)}${c.dia_pago ? ` <span class="muted small">· día ${c.dia_pago}</span>` : ''}</td><td class="num">${c.moneda === 'VES' ? bs(c.monto) : usd(c.monto)}</td><td>${esc(c.frecuencia)}</td><td class="num">${d ? usd(d.mensualUsd) : '—'}</td><td><button class="btn ghost small" type="button" data-borra-costo="${c.id}">Quitar</button></td></tr>`; }).join('') || '<tr><td colspan="5" class="muted">Sin costos cargados.</td></tr>'}
+    </tbody></table></div></section>
+    <section class="panel"><h2>Agregar costo</h2><form class="form" id="f-costo">
+      <label class="wide">Concepto<input type="text" id="c-conc" required placeholder="Alquiler, condominio, internet…"></label>
+      <label>Monto<input type="number" id="c-monto" step="0.01" min="0" required></label>
+      <label>Moneda<select id="c-mon"><option value="USD">USD</option><option value="VES">Bs</option></select></label>
+      <label>Frecuencia<select id="c-frec"><option>mensual</option><option>quincenal</option><option>semanal</option><option>anual</option></select></label>
+      <label>Día de pago<input type="number" id="c-dia" min="1" max="31" placeholder="Opcional"></label>
+      <button class="btn" type="submit">Agregar</button></form>
+      <p class="small muted">Con día de pago, el bot avisa por WhatsApp el día anterior (crea el recordatorio en Agenda).</p></section>
+  </div>`;
+};
+document.addEventListener('change', (ev) => { if (ev.target.id === 'c-margen') { F.margen = Number(ev.target.value) || 40; guardarFiltros(); render(); } });
+
+V.nomina = async () => {
+  if (!listo('centro')) return `<div class="top"><h1>Nómina y comisión</h1></div>${vacio('centro')}`;
+  const r = rango();
+  const [emps, cfg, turnos, vu, th] = await Promise.all([D.tabla('empleados', '*'), D.config(), D.tabla('turnos', '*'), ventasUniformes(r), tasaHoy()]);
+  const equipo = (emps || []).filter((e) => (e.empresa || 'uniformes') === 'uniformes');
+  const cg = cfg.comision_grupal || { pct: 0, reparto: 'iguales' };
+  const ventas = vu ? vu.dias.reduce((s, d) => s + d.mercancia, 0) : 0;
+  const com = UC.comisionGrupal({ ventasUsd: ventas, pct: Number(cg.pct || 0), reparto: cg.reparto, empleados: equipo, turnos: (turnos || []).filter((t) => enRango(String(t.fecha), r)) });
+  const nom = UC.calcularNomina(equipo, Object.fromEntries(com.lineas.map((l) => [l.cedula, l.comision_usd])), { tasaPago: th ? Number(th.usdt) : undefined });
+  S.ultimaNomina = { r, com, nom, tasa: th ? Number(th.usdt) : null };
+  const soy = S.rol;
+  if (soy === 'vendedora') {
+    const mia = com.lineas.find((l) => l.cedula === S.yo?.cedula);
+    return `<div class="top"><div><h1>Comisión del equipo</h1></div>${htmlFiltros({ empresa: false })}</div><div class="kpis">${kpi('Ventas de la tienda', usd(ventas))}${kpi('Pozo', usd(com.pozo_usd), `${cg.pct}%`)}${kpi('Tu parte', usd(mia?.comision_usd || 0))}</div>`;
+  }
+  return `
+  <div class="top"><div><h1>Nómina y comisión grupal</h1><p class="sub">El pozo es un % de las ventas de mercancía de la tienda y se reparte entre el equipo ${cg.reparto === 'dias' ? 'según los días trabajados' : 'en partes iguales'}. No depende de quién hizo cada venta.</p></div>${htmlFiltros({ empresa: false })}</div>
+  <div class="kpis">${kpi('Ventas de mercancía', usd(ventas), vu ? vu.fuente : 'sin fuente de ventas')}${kpi('Pozo de comisión', usd(com.pozo_usd), `${nf(2).format(com.pct)}% · ${cg.reparto === 'dias' ? 'por días' : 'partes iguales'}`, 'emp-u')}${kpi('A pagar en USD', usd(nom.totales.pagar_usd))}${kpi('A pagar en Bs', bs(nom.totales.pagar_ves))}</div>
+  ${com.avisos.map((a) => `<div class="banner" style="margin-top:12px">${esc(a)}</div>`).join('')}
+  <div class="grid cols-2" style="margin-top:16px">
+    <section class="panel"><h2>Reparto y nómina</h2><div class="tbl-wrap"><table><thead><tr><th>Empleado</th><th class="num">Base USD</th><th class="num">Base Bs</th>${cg.reparto === 'dias' ? '<th class="num">Días</th>' : ''}<th class="num">Comisión</th><th class="num">Total USD</th></tr></thead><tbody>
+      ${nom.lineas.map((l) => { const c = com.lineas.find((x) => x.cedula === l.cedula); return `<tr><td>${esc(l.nombre)}<br><span class="muted small mono">${esc(l.cedula)}</span></td><td class="num">${usd(l.base_usd)}</td><td class="num">${bs(l.base_ves)}</td>${cg.reparto === 'dias' ? `<td class="num">${c?.dias ?? 0}</td>` : ''}<td class="num">${usd(l.comision_usd)}${c && c.peso !== 1 ? ` <span class="muted small">×${c.peso}</span>` : ''}</td><td class="num">${usd(l.total_usd)}</td></tr>`; }).join('') || '<tr><td colspan="6" class="muted">Agrega empleados.</td></tr>'}
+    </tbody></table></div>
+    ${soy === 'dueno' ? `<button class="btn ghost" type="button" id="b-guardar-nom">Guardar nómina del período</button>` : ''}</section>
+    <section class="panel"><h2>Configuración</h2>
+      ${soy === 'dueno' ? `<form class="form" id="f-com"><label>% del pozo<input type="number" id="com-pct" value="${cg.pct}" step="0.1" min="0" max="50"></label><label>Reparto<select id="com-rep"><option value="iguales"${cg.reparto !== 'dias' ? ' selected' : ''}>Partes iguales</option><option value="dias"${cg.reparto === 'dias' ? ' selected' : ''}>Por días trabajados</option></select></label><button class="btn" type="submit">Guardar</button></form>` : ''}
+      <h3 style="margin-top:8px">Agregar o editar empleado</h3>
+      <form class="form" id="f-emp"><label>Cédula<input type="text" id="e-ced" required inputmode="numeric"></label><label>Nombre<input type="text" id="e-nom" required></label><label>Apellido<input type="text" id="e-ape" required></label><label>Cargo<input type="text" id="e-car"></label><label>Base USD<input type="number" id="e-usd" step="0.01" min="0" value="0"></label><label>Base Bs<input type="number" id="e-ves" step="0.01" min="0" value="0"></label><label>Frecuencia<select id="e-frec"><option>quincenal</option><option>semanal</option><option>mensual</option></select></label><label>Peso en el pozo<input type="number" id="e-peso" step="0.1" min="0" value="1"></label><button class="btn" type="submit">Guardar empleado</button></form>
+      <p class="small muted">La cédula identifica a cada persona: si ya existe, se actualizan sus datos.</p>
+    </section>
+  </div>`;
+};
+
+V.agenda = async () => {
+  if (!listo('centro')) return `<div class="top"><h1>Agenda y recordatorios</h1></div>${vacio('centro')}`;
+  const [rec, costos] = await Promise.all([D.tabla('recordatorios', '*'), D.tabla('costos_fijos', '*')]);
+  const pend = rec.filter((x) => !x.enviado_en).sort((a, b) => a.cuando.localeCompare(b.cuando));
+  const env = rec.filter((x) => x.enviado_en).sort((a, b) => b.cuando.localeCompare(a.cuando)).slice(0, 15);
+  const d = Number(hoy().slice(8, 10));
+  const pagos = costos.filter((c) => c.dia_pago && c.activo !== false).map((c) => ({ ...c, falta: (c.dia_pago - d + 31) % 31 })).sort((a, b) => a.falta - b.falta);
+  return `
+  <div class="top"><div><h1>Agenda y recordatorios</h1><p class="sub">Los recordatorios llegan por WhatsApp al teléfono que indiques. Cada uno se puede añadir a Google Calendar.</p></div></div>
+  <div class="grid cols-2">
+    <section class="panel"><h2>Nuevo recordatorio</h2><form class="form" id="f-rec">
+      <label class="wide">Qué recordar<input type="text" id="r-txt" required placeholder="Pagar condominio del local"></label>
+      <label>Cuándo<input type="datetime-local" id="r-cuando" required value="${sumaDias(hoy(), 1)}T09:00"></label>
+      <label>Repetir<select id="r-rep"><option value="">No</option><option value="diario">Diario</option><option value="semanal">Semanal</option><option value="mensual">Mensual</option></select></label>
+      <label>Empresa<select id="r-emp"><option value="">—</option><option value="uniformes">Uniformes</option><option value="racks">Racks</option></select></label>
+      <label>WhatsApp<input type="text" id="r-tel" required inputmode="tel" value="${esc(CFG.telefonoDueno || '')}" placeholder="58412…"></label>
+      <button class="btn" type="submit">Programar</button></form></section>
+    <section class="panel"><h2>Pagos fijos del mes</h2>
+      ${pagos.length ? `<div class="tbl-wrap"><table><tbody>${pagos.map((c) => `<tr><td>${esc(c.concepto)} ${empPill(c.empresa)}</td><td class="num">${c.moneda === 'VES' ? bs(c.monto) : usd(c.monto)}</td><td class="num">día ${c.dia_pago}</td><td>${c.falta === 0 ? '<span class="pill p-bad">hoy</span>' : c.falta <= 3 ? `<span class="pill p-warn">en ${c.falta} d</span>` : `<span class="pill p-n">en ${c.falta} d</span>`}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted small">Pon un día de pago a los costos fijos para verlos aquí.</p>'}
+    </section>
+  </div>
+  <section class="panel" style="margin-top:16px"><h2>Próximos</h2>
+    ${pend.length ? `<div class="tbl-wrap"><table><tbody>${pend.map((x) => `<tr><td class="mono">${new Date(x.cuando).toLocaleString('es-VE', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'America/Caracas' })}</td><td>${esc(x.texto)} ${x.empresa ? empPill(x.empresa) : ''}${x.repetir ? ` <span class="pill p-n">${esc(x.repetir)}</span>` : ''}</td><td class="mono small">${esc(x.destino)}</td><td><a class="small" href="${linkCalendar(x)}" target="_blank" rel="noopener">Google Calendar</a></td><td><button class="btn ghost small" type="button" data-borra-rec="${x.id}">Quitar</button></td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">No hay recordatorios pendientes.</p>'}
+  </section>
+  ${env.length ? `<section class="panel" style="margin-top:16px"><h2>Enviados</h2><div class="tbl-wrap"><table><tbody>${env.map((x) => `<tr><td class="mono small">${fCorta(x.cuando.slice(0, 10))}</td><td class="muted">${esc(x.texto)}</td></tr>`).join('')}</tbody></table></div></section>` : ''}`;
+};
+function linkCalendar(x) {
+  const ini = new Date(x.cuando), fin = new Date(ini.getTime() + 30 * 60000);
+  const f = (d) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  const rec = x.repetir ? '&recur=' + encodeURIComponent('RRULE:FREQ=' + ({ diario: 'DAILY', semanal: 'WEEKLY', mensual: 'MONTHLY' })[x.repetir]) : '';
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(x.texto)}&dates=${f(ini)}/${f(fin)}&ctz=America/Caracas&details=${encodeURIComponent('Centro de mando · ' + (EMP[x.empresa] || 'Uniformes Caracas / Racks'))}${rec}`;
+}
+
+V.conexiones = async () => {
+  const filas = Object.entries(FUENTES).map(([id, f]) => {
+    const conf = DEMO || (CFG[id]?.url && CFG[id]?.anonKey);
+    return `<div class="conn-row"><div><strong>${f.nombre}</strong><div class="small muted">${f.desc}</div></div><div>${!conf ? '<span class="pill p-warn">falta en config.js</span>' : S.sesion[id] ? '<span class="pill p-ok">conectado</span>' : '<span class="pill p-n">sin sesión</span>'}</div></div>`;
+  }).join('');
+  return `
+  <div class="top"><div><h1>Conexiones</h1><p class="sub">Entra una sola vez con tu correo y clave: se usa en las tres bases. Si en alguna tienes otra clave, entra solo a esa.</p></div></div>
+  <div class="grid cols-2">
+    <section class="panel login"><h2>Entrar</h2>
+      ${DEMO ? '<p class="muted">En la demo no hace falta entrar.</p>' : `<form class="form" id="f-login" style="grid-template-columns:1fr"><label>Correo<input type="email" id="l-mail" required autocomplete="username"></label><label>Clave<input type="password" id="l-clave" required autocomplete="current-password"></label>
+      <label>Entrar en<select id="l-solo"><option value="">Las tres</option>${Object.entries(FUENTES).map(([k, f]) => `<option value="${k}">${f.nombre}</option>`).join('')}</select></label><button class="btn" type="submit">Entrar</button></form><div id="l-res" class="small"></div>`}
+    </section>
+    <section class="panel"><h2>Estado</h2><div class="conn">${filas}</div>
+      ${S.yo ? `<p class="small">Entraste como <strong>${esc(S.yo.nombre)}</strong> · rol ${esc(S.rol)}.</p>` : ''}
+      ${!DEMO && Object.values(S.sesion).some(Boolean) ? '<button class="btn ghost" type="button" id="b-salir">Salir de todo</button>' : ''}
+    </section>
+  </div>`;
+};
+
+/* =====================================================================
+   FORMULARIOS
+   ===================================================================== */
+document.addEventListener('submit', async (ev) => {
+  const f = ev.target;
+  if (f.id === 'f-gasto') return enviarGasto(ev);
+  if (f.id === 'f-pedido') return enviarPedido(ev);
+  ev.preventDefault();
+  try {
+    if (f.id === 'f-login') {
+      $('#l-res').textContent = 'Entrando…';
+      const res = await entrar($('#l-mail').value.trim(), $('#l-clave').value, $('#l-solo').value || null);
+      CACHE.clear(); render();
+      setTimeout(() => { const el = $('#l-res'); if (el) el.innerHTML = Object.entries(res).map(([k, v]) => `${FUENTES[k].nombre}: ${v === 'ok' ? '<span class="pill p-ok">conectado</span>' : `<span class="pill p-bad">${esc(v)}</span>`}`).join('<br>'); }, 50);
+      return;
+    }
+    if (f.dataset.envio) {
+      const [sel, inp] = f.querySelectorAll('select,input');
+      await guardar('envios', { pedido_id: f.dataset.envio, transportista: sel.value, tracking: inp.value.trim() });
+      toast('Guía agregada.');
+    } else if (f.dataset.factura) {
+      const [num, monto, file] = f.querySelectorAll('input');
+      let ruta = null;
+      if (file.files[0] && !DEMO) {
+        const fl = file.files[0]; ruta = `${f.dataset.factura}/${Date.now()}-${fl.name.replace(/[^\w.-]+/g, '_')}`;
+        const { error } = await cliente('centro').storage.from('facturas').upload(ruta, fl, { upsert: false });
+        if (error) throw new Error(error.message);
+      }
+      await guardar('facturas', { pedido_id: f.dataset.factura, numero: num.value.trim() || null, monto: Number(monto.value) || null, archivo_url: ruta, fecha: hoy() });
+      toast('Factura guardada.');
+    } else if (f.id === 'f-costo') {
+      await guardar('costos_fijos', { concepto: $('#c-conc').value.trim(), monto: Number($('#c-monto').value), moneda: $('#c-mon').value, frecuencia: $('#c-frec').value, dia_pago: Number($('#c-dia').value) || null, empresa: F.empresa === 'racks' ? 'racks' : 'uniformes' });
+      toast('Costo agregado.');
+    } else if (f.id === 'f-com') {
+      await guardar('config', { clave: 'comision_grupal', valor: { pct: Number($('#com-pct').value) || 0, reparto: $('#com-rep').value } });
+      toast('Comisión actualizada.');
+    } else if (f.id === 'f-emp') {
+      await guardar('empleados', { cedula: $('#e-ced').value.trim(), nombre: $('#e-nom').value.trim(), apellido: $('#e-ape').value.trim(), cargo: $('#e-car').value.trim() || null, salario_usd: Number($('#e-usd').value) || 0, salario_ves: Number($('#e-ves').value) || 0, frecuencia_pago: $('#e-frec').value, peso_comision: Number($('#e-peso').value) || 1, empresa: 'uniformes', activo: true }, { onConflict: 'cedula' });
+      toast('Empleado guardado.');
+    } else if (f.id === 'f-rec') {
+      const cuando = new Date($('#r-cuando').value + ':00-04:00');
+      await guardar('recordatorios', { texto: $('#r-txt').value.trim(), cuando: cuando.toISOString(), repetir: $('#r-rep').value || null, destino: $('#r-tel').value.replace(/\D/g, ''), empresa: $('#r-emp').value || null, creado_por: S.yo?.nombre || 'web' });
+      toast('Recordatorio programado. Llegará por WhatsApp.');
+    } else return;
+    render();
+  } catch (e) { toastErr(e); }
+});
+document.addEventListener('change', async (ev) => {
+  const s = ev.target.closest('[data-estado]'); if (!s) return;
+  try { await guardar('pedidos', { id: s.dataset.estado, estado: s.value }); toast('Estado actualizado.'); render(); } catch (e) { toastErr(e); }
+});
+document.addEventListener('click', async (ev) => {
+  const t = ev.target;
+  try {
+    if (t.id === 'b-salir') return salir();
+    if (t.dataset.borraCosto) { await borrar('costos_fijos', 'id', Number(t.dataset.borraCosto)); toast('Costo quitado.'); return render(); }
+    if (t.dataset.borraRec) { await borrar('recordatorios', 'id', t.dataset.borraRec); toast('Recordatorio quitado.'); return render(); }
+    if (t.dataset.ver) {
+      if (DEMO) return toast('Modo demo: no hay archivo.');
+      const { data, error } = await cliente('centro').storage.from('facturas').createSignedUrl(t.dataset.ver, 300);
+      if (error) throw new Error(error.message);
+      const a = document.createElement('a'); a.href = data.signedUrl; a.target = '_blank'; a.rel = 'noopener'; a.click();
+    }
+    if (t.id === 'b-guardar-nom' && S.ultimaNomina) {
+      const { r, com, nom, tasa } = S.ultimaNomina;
+      const [p] = await guardar('nomina_periodos', { desde: r.desde, hasta: r.hasta, estado: 'calculado' }, { onConflict: 'desde,hasta' });
+      await guardar('nomina_lineas', nom.lineas.map((l) => ({ periodo_id: p.id, cedula: l.cedula, base_usd: l.base_usd, base_ves: l.base_ves, ventas_usd: com.ventas_usd, comision_usd: l.comision_usd, tasa_pago: tasa, total_usd: l.total_usd })), { onConflict: 'periodo_id,cedula' });
+      toast(`Nómina del ${fCorta(r.desde)} al ${fCorta(r.hasta)} guardada.`);
+    }
+  } catch (e) { toastErr(e); }
+});
+
+/* =====================================================================
+   ARRANQUE Y RUTAS
+   ===================================================================== */
+const VER_ROL = {
+  vendedora: ['resumen', 'ventas', 'calientes', 'diferencial', 'nomina', 'agenda', 'conexiones'],
+  encargada: ['resumen', 'ventas', 'pedidos', 'calientes', 'diferencial', 'agenda', 'cierre', 'conexiones'],
+  admin: VISTAS.map((v) => v[0]).filter((v) => v !== 'nomina'),
+  dueno: VISTAS.map((v) => v[0]),
+};
+function pintarNav(actual) {
+  const vis = VER_ROL[S.rol] || VER_ROL.dueno;
+  $('#nav').innerHTML = VISTAS.filter(([k]) => vis.includes(k)).map(([k, l, n]) => `<a href="#${k}" ${k === actual ? 'aria-current="page"' : ''}><span class="n">${n}</span>${l}</a>`).join('');
+  $('#sidefoot').innerHTML = DEMO ? '<span>Modo demo</span>' : Object.entries(FUENTES).map(([k, f]) => `<span><i class="dot ${S.sesion[k] ? 'on' : ''}"></i>${f.nombre}</span>`).join('');
+}
+let pintando = 0;
+async function render() {
+  const id = (location.hash || '#resumen').slice(1);
+  const vista = V[id] ? id : 'resumen';
+  pintarNav(vista);
+  const yo = ++pintando;
+  const main = $('#main');
+  try {
+    const html = await V[vista]();
+    if (yo !== pintando) return;
+    main.innerHTML = (DEMO ? `<div class="banner"><strong>Vista de demostración.</strong> ${esc(DEMO.nota)}</div>` : '') + html;
+    if (vista === 'diferencial') calcDif();
+  } catch (e) {
+    if (yo !== pintando) return;
+    main.innerHTML = `<div class="banner">No se pudo cargar esta sección: ${esc(e.message)}. Revisa la conexión en <a href="#conexiones">Conexiones</a>.</div>`;
+  }
+}
+window.addEventListener('hashchange', () => { render(); $('#main').focus({ preventScroll: true }); });
+(async () => {
+  if (DEMO) F.periodo = F.periodo || 'mes';
+  await revisarSesiones();
+  if (!DEMO && !Object.values(S.sesion).some(Boolean) && !location.hash) location.hash = '#conexiones';
+  render();
+})();
+</script>
+</body>
+</html>
